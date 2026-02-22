@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-RealTools AI — Backend serwer
-Pobiera prawdziwe dane z WFS Rejestru Cen Nieruchomości (geoportal.gov.pl)
-i serwuje JSON + frontend
+RealTools AI — Backend serwer v2
+Pobiera dane z WFS RCN (geoportal.gov.pl), cache'uje co tydzien
 """
 
 import http.server
@@ -13,15 +12,20 @@ import xml.etree.ElementTree as ET
 import os
 import sys
 import re
-from math import radians, cos, sin, sqrt, atan2
+import time
+from pathlib import Path
+from datetime import datetime, timedelta
+from math import radians, cos
 
 PORT = 5557
 WFS_URL = "https://mapy.geoportal.gov.pl/wss/service/rcn"
+BASE_DIR = Path(__file__).parent
+CACHE_DIR = BASE_DIR / "data" / "cache"
+CACHE_MAX_AGE_DAYS = 7
 
-# EPSG:2180 (PL-2000 zone 7) approximate conversion to WGS84
-# For bounding box we use WGS84 directly in the WFS request
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-# City center coordinates (WGS84) for bounding box calculation
+# City center coordinates (WGS84)
 CITY_CENTERS = {
     "Gdańsk":    (54.372, 18.638),
     "Sopot":     (54.441, 18.560),
@@ -35,27 +39,36 @@ CITY_CENTERS = {
     "Lublin":    (51.246, 22.568),
 }
 
-# EPSG:2180 conversion helpers (simplified)
-# For search we just expand the city bbox generously
+# NBP average prices per m2 (last known data — updated manually or via fetch_data.py)
+NBP_PRICES = {
+    "Gdańsk":    {"primary": 14200, "secondary": 13100, "quarter": "Q3 2025"},
+    "Sopot":     {"primary": 18500, "secondary": 16800, "quarter": "Q3 2025"},
+    "Gdynia":    {"primary": 13800, "secondary": 12200, "quarter": "Q3 2025"},
+    "Warszawa":  {"primary": 16300, "secondary": 16400, "quarter": "Q3 2025"},
+    "Kraków":    {"primary": 15100, "secondary": 14600, "quarter": "Q3 2025"},
+    "Wrocław":   {"primary": 13900, "secondary": 12800, "quarter": "Q3 2025"},
+    "Poznań":    {"primary": 12600, "secondary": 11200, "quarter": "Q3 2025"},
+    "Łódź":      {"primary": 10100, "secondary": 8200,  "quarter": "Q3 2025"},
+    "Szczecin":  {"primary": 11800, "secondary": 9900,  "quarter": "Q3 2025"},
+    "Lublin":    {"primary": 10500, "secondary": 9200,  "quarter": "Q3 2025"},
+}
+
+
 def city_bbox_wgs84(city, radius_km=5):
-    """Return WGS84 bounding box around city center."""
     if city not in CITY_CENTERS:
         return None
     lat, lon = CITY_CENTERS[city]
-    # ~1 degree lat = 111 km, ~1 degree lon = 111*cos(lat) km
     dlat = radius_km / 111.0
     dlon = radius_km / (111.0 * cos(radians(lat)))
     return (lat - dlat, lon - dlon, lat + dlat, lon + dlon)
 
 
 def parse_gml_lokale(xml_text):
-    """Parse WFS GML response into list of dicts."""
     ns = {
         'wfs': 'http://www.opengis.net/wfs/2.0',
         'ms': 'http://mapserver.gis.umn.edu/mapserver',
         'gml': 'http://www.opengis.net/gml/3.2',
     }
-
     results = []
     try:
         root = ET.fromstring(xml_text)
@@ -71,7 +84,6 @@ def parse_gml_lokale(xml_text):
             el = lokal.find(f'ms:{tag}', ns)
             return el.text.strip() if el is not None and el.text else ""
 
-        # Parse address
         addr_raw = txt('lok_adres')
         addr_parts = {}
         if addr_raw:
@@ -85,7 +97,6 @@ def parse_gml_lokale(xml_text):
         nr = addr_parts.get('NR_PORZ', '')
         address = f"{street} {nr}".strip() if street else city
 
-        # Parse numeric fields
         def num(val):
             try:
                 return float(val.replace(',', '.')) if val else 0
@@ -96,15 +107,11 @@ def parse_gml_lokale(xml_text):
         cena = num(txt('lok_cena_brutto'))
         funkcja = txt('lok_funkcja')
 
-        # Skip garages, storage units etc.
         if funkcja and funkcja != 'mieszkalna':
             continue
-
-        # Skip if no area or price
         if pow_uzyt <= 0 or cena <= 0:
             continue
 
-        # Parse date
         dok_data = txt('dok_data')
         date_str = ""
         if dok_data:
@@ -115,10 +122,8 @@ def parse_gml_lokale(xml_text):
         izby = txt('lok_liczba_izb')
         kond = txt('lok_nr_kond')
         rynek = txt('tran_rodzaj_rynku')
-
         price_m2 = round(cena / pow_uzyt) if pow_uzyt > 0 else 0
 
-        # Filter: require date, skip very old transactions and price anomalies
         if not date_str:
             continue
         try:
@@ -139,14 +144,13 @@ def parse_gml_lokale(xml_text):
             'price': int(cena),
             'priceM2': price_m2,
             'date': date_str,
-            'market': 'wtórny' if rynek == 'wtorny' else ('pierwotny' if rynek == 'pierwotny' else rynek),
+            'market': 'wtorny' if rynek == 'wtorny' else ('pierwotny' if rynek == 'pierwotny' else rynek),
         })
 
     return results
 
 
 def fetch_rcn_data(city, max_records=500):
-    """Fetch lokale from WFS for given city."""
     bbox = city_bbox_wgs84(city)
     if not bbox:
         return []
@@ -163,36 +167,31 @@ def fetch_rcn_data(city, max_records=500):
     }
 
     url = WFS_URL + '?' + urllib.parse.urlencode(params)
-    print(f"[RCN] URL: {url}", file=sys.stderr)
+    print(f"[RCN] Fetching: {city}...", file=sys.stderr)
 
     try:
         req = urllib.request.Request(url, headers={
-            'User-Agent': 'RealTools-AI/1.0',
+            'User-Agent': 'RealTools-AI/2.0',
             'Accept': 'application/xml',
         })
         with urllib.request.urlopen(req, timeout=60) as resp:
             xml_data = resp.read().decode('utf-8')
-
-        print(f"[RCN] Got XML response: {len(xml_data)} bytes", file=sys.stderr)
+        print(f"[RCN] Got {len(xml_data)} bytes for {city}", file=sys.stderr)
         return parse_gml_lokale(xml_data)
     except Exception as e:
-        print(f"[RCN] Error fetching data for {city}: {e}", file=sys.stderr)
+        print(f"[RCN] Error for {city}: {e}", file=sys.stderr)
         return []
 
 
 def compute_stats(transactions):
-    """Compute summary statistics from transactions list."""
     if not transactions:
         return None
-
     prices_m2 = [t['priceM2'] for t in transactions if t['priceM2'] > 0]
     if not prices_m2:
         return None
-
     prices_m2.sort()
     n = len(prices_m2)
     median = prices_m2[n // 2] if n % 2 == 1 else (prices_m2[n//2 - 1] + prices_m2[n//2]) // 2
-
     return {
         'count': n,
         'avg': round(sum(prices_m2) / n),
@@ -202,48 +201,114 @@ def compute_stats(transactions):
     }
 
 
-# ═══ HTTP SERVER ═══
-class RealToolsHandler(http.server.SimpleHTTPRequestHandler):
+# --- CACHE ---
+def cache_path(city):
+    safe = city.replace(' ', '_').lower()
+    return CACHE_DIR / f"{safe}.json"
+
+
+def read_cache(city):
+    path = cache_path(city)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+        fetched = datetime.fromisoformat(data.get('fetched_at', '2000-01-01'))
+        if datetime.now() - fetched > timedelta(days=CACHE_MAX_AGE_DAYS):
+            print(f"[CACHE] Stale for {city} (fetched {fetched})", file=sys.stderr)
+            return None
+        print(f"[CACHE] Hit for {city} (fetched {fetched})", file=sys.stderr)
+        return data
+    except Exception as e:
+        print(f"[CACHE] Error reading {city}: {e}", file=sys.stderr)
+        return None
+
+
+def write_cache(city, data):
+    path = cache_path(city)
+    data['fetched_at'] = datetime.now().isoformat()
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+    print(f"[CACHE] Written for {city}", file=sys.stderr)
+
+
+def get_city_data(city):
+    """Get data: cache first, then live fetch."""
+    cached = read_cache(city)
+    if cached:
+        return cached
+
+    transactions = fetch_rcn_data(city)
+    stats = compute_stats(transactions)
+    transactions.sort(key=lambda t: t['date'], reverse=True)
+
+    data = {
+        'city': city,
+        'transactions': transactions,
+        'stats': stats,
+        'source': 'Rejestr Cen Nieruchomosci (RCN)',
+        'count': len(transactions),
+    }
+    write_cache(city, data)
+    return data
+
+
+def get_market_data():
+    """Return NBP market data + cache freshness info."""
+    freshness = {}
+    for city in CITY_CENTERS:
+        path = cache_path(city)
+        if path.exists():
+            try:
+                d = json.loads(path.read_text(encoding='utf-8'))
+                freshness[city] = d.get('fetched_at', None)
+            except Exception:
+                freshness[city] = None
+        else:
+            freshness[city] = None
+
+    return {
+        'nbp_prices': NBP_PRICES,
+        'cache_freshness': freshness,
+        'last_update': max((v for v in freshness.values() if v), default=None),
+    }
+
+
+# --- HTTP SERVER ---
+class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
 
         if parsed.path == '/api/rcn':
-            self.handle_rcn_api(parsed)
+            self.handle_rcn(parsed)
+        elif parsed.path == '/api/market-data':
+            self.handle_market_data()
         else:
-            # Serve static files
             super().do_GET()
 
-    def handle_rcn_api(self, parsed):
-        """API endpoint: /api/rcn?city=Gdańsk"""
+    def handle_rcn(self, parsed):
         params = urllib.parse.parse_qs(parsed.query)
         city = params.get('city', [''])[0]
 
         if not city:
             self.send_json(400, {'error': 'Brak parametru city'})
             return
-
         if city not in CITY_CENTERS:
             self.send_json(400, {'error': f'Nieznane miasto: {city}'})
             return
 
-        print(f"[RCN] Fetching data for: {city}...", file=sys.stderr)
+        data = get_city_data(city)
 
-        transactions = fetch_rcn_data(city)
-        stats = compute_stats(transactions)
+        # Add NBP reference price
+        nbp = NBP_PRICES.get(city)
+        if nbp:
+            data['nbp'] = nbp
 
-        # Sort by date (newest first)
-        transactions.sort(key=lambda t: t['date'], reverse=True)
+        self.send_json(200, data)
 
-        print(f"[RCN] Got {len(transactions)} transactions for {city}", file=sys.stderr)
-
-        self.send_json(200, {
-            'city': city,
-            'transactions': transactions,
-            'stats': stats,
-            'source': 'Rejestr Cen Nieruchomości (RCN) — geoportal.gov.pl',
-            'count': len(transactions),
-        })
+    def handle_market_data(self):
+        data = get_market_data()
+        self.send_json(200, data)
 
     def send_json(self, code, data):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
@@ -260,13 +325,14 @@ class RealToolsHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    server = http.server.HTTPServer(('', PORT), RealToolsHandler)
-    print(f"🏠 RealTools AI → http://localhost:{PORT}")
-    print(f"📊 API endpoint: http://localhost:{PORT}/api/rcn?city=Gdańsk")
-    print(f"🔗 Źródło: Rejestr Cen Nieruchomości (geoportal.gov.pl)")
+    os.chdir(str(BASE_DIR))
+    server = http.server.HTTPServer(('', PORT), Handler)
+    print(f"RealTools AI v2.0")
+    print(f"http://localhost:{PORT}")
+    print(f"API: /api/rcn?city=Gdansk")
+    print(f"Cache: {CACHE_DIR}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nZamykam serwer.")
+        print("\nZamykam.")
         server.server_close()

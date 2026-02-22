@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RealTools AI — Raport Cen Transakcyjnych</title>
+  <title>RealTools — Raport Cen Transakcyjnych</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -11,115 +11,180 @@
 </head>
 <body>
 
-  <!-- ═══ HEADER ═══ -->
-  <header id="main-header">
-    <div class="header-inner">
-      <div class="logo">
-        <div class="logo-diamond">◆</div>
-        <div class="logo-text">
-          <span class="logo-name">RealTools</span>
-          <span class="logo-ai">AI</span>
+  <!-- Animated mesh gradient background -->
+  <div class="mesh-bg"></div>
+
+  <div class="page-content">
+
+    <!-- HEADER -->
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-mark">RT</div>
+          <div class="logo-text">RealTools <span>AI</span></div>
+        </div>
+        <div class="header-meta">
+          <div class="live-badge" id="liveBadge">
+            <div class="live-dot"></div>
+            <span id="liveText">Dane aktualne</span>
+          </div>
+          <span class="header-source">Rejestr Cen Nieruchomosci</span>
         </div>
       </div>
-      <div class="header-right">
-        <span class="header-source">Źródło: Rejestr Cen Nieruchomości (RCN)</span>
+    </header>
+
+    <main>
+
+      <!-- HERO -->
+      <section id="hero-section" class="hero">
+        <div class="hero-tag">Dane z aktow notarialnych</div>
+        <h1>Raport cen<br><span class="gradient-text">transakcyjnych</span></h1>
+        <p class="subtitle">Analiza porownawcza oparta na danych z Rejestru Cen Nieruchomosci</p>
+      </section>
+
+      <!-- FORM -->
+      <div class="container">
+        <div id="form-section" class="glass-card form-card">
+          <div class="card-top">
+            <div class="card-title">Parametry analizy</div>
+            <div class="card-label">Dane wejsciowe</div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="rcn-miasto">Miasto</label>
+              <select id="rcn-miasto">
+                <option value="">Wybierz miasto</option>
+                <option value="Gdańsk">Gdansk</option>
+                <option value="Sopot">Sopot</option>
+                <option value="Gdynia">Gdynia</option>
+                <option value="Warszawa">Warszawa</option>
+                <option value="Kraków">Krakow</option>
+                <option value="Wrocław">Wroclaw</option>
+                <option value="Poznań">Poznan</option>
+                <option value="Łódź">Lodz</option>
+                <option value="Szczecin">Szczecin</option>
+                <option value="Lublin">Lublin</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="rcn-dzielnica">Ulica / dzielnica</label>
+              <input type="text" id="rcn-dzielnica" placeholder="np. Polanki, Oliwa...">
+            </div>
+            <div class="field">
+              <label for="rcn-typ">Typ nieruchomosci</label>
+              <select id="rcn-typ">
+                <option value="mieszkanie">Mieszkanie</option>
+                <option value="dom">Dom</option>
+                <option value="dzialka">Dzialka</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="rcn-pokoje">Min. pokoje</label>
+              <select id="rcn-pokoje">
+                <option value="0">Wszystkie</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="rcn-metraz">Metraz oferty (m2)</label>
+              <input type="number" id="rcn-metraz" placeholder="np. 68">
+            </div>
+            <div class="field">
+              <label for="rcn-cena">Cena oferty (PLN)</label>
+              <input type="number" id="rcn-cena" placeholder="np. 785000">
+            </div>
+          </div>
+
+          <button id="generate-btn" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.2-8.55"/><path d="M21 3v6h-6"/></svg>
+            Generuj raport
+          </button>
+        </div>
+
+        <!-- SKELETON LOADING -->
+        <div id="loading-section" class="hidden">
+          <div class="stats-row">
+            <div class="skeleton skeleton-stat"></div>
+            <div class="skeleton skeleton-stat"></div>
+            <div class="skeleton skeleton-stat"></div>
+            <div class="skeleton skeleton-stat"></div>
+          </div>
+          <div class="skeleton skeleton-chart" style="margin-bottom:20px"></div>
+          <div class="skeleton skeleton-table"></div>
+        </div>
+
+        <!-- REPORT OUTPUT -->
+        <div id="report-output" class="hidden">
+          <div class="output-bar">
+            <div class="output-actions">
+              <button id="print-btn" class="btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+                Pobierz PDF
+              </button>
+              <button id="new-btn" class="btn-ghost">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Nowa analiza
+              </button>
+            </div>
+          </div>
+          <div id="report-container">
+            <!-- Generated by JS -->
+          </div>
+          <div class="output-bottom">
+            <button id="print-btn-bottom" class="btn-outline">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+              Pobierz PDF
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </header>
 
-  <!-- ═══ MAIN APP ═══ -->
-  <main id="app">
+    </main>
 
-    <!-- HERO -->
-    <section id="hero-section" class="hero">
-      <div class="hero-badge">DANE Z AKTÓW NOTARIALNYCH</div>
-      <h1>Raport Cen<br><span class="gold">Transakcyjnych</span></h1>
-      <p class="subtitle">Analiza porównawcza na podstawie Rejestru Cen Nieruchomości</p>
+    <!-- DATA SOURCES -->
+    <section class="sources-section">
+      <div class="container">
+        <div class="sources-card glass-card">
+          <div class="sources-notice">
+            <div class="sources-notice-icon">i</div>
+            <div>
+              <strong>Od 1 lutego 2025 r. dane o cenach transakcyjnych nieruchomosci sa jawne.</strong>
+              Nowelizacja ustawy o gospodarce nieruchomosciami zniosla klauzule poufnosci z danych w Rejestrze Cen Nieruchomosci (RCN). Kazdy moze teraz sprawdzic ceny transakcyjne nieruchomosci z aktow notarialnych.
+            </div>
+          </div>
+          <div class="sources-title">Zweryfikuj dane samodzielnie</div>
+          <div class="sources-grid">
+            <a href="https://www.geoportal.gov.pl/mapy/rejestr-cen-nieruchomosci/" target="_blank" class="source-link">
+              <div class="source-name">Geoportal.gov.pl</div>
+              <div class="source-desc">Oficjalny Rejestr Cen Nieruchomosci — mapa transakcji z aktow notarialnych</div>
+            </a>
+            <a href="https://integracja.gugik.gov.pl/" target="_blank" class="source-link">
+              <div class="source-name">KICN — GUGiK</div>
+              <div class="source-desc">Krajowa Integracja Cen Nieruchomosci — dane zbiorowe z 320 powiatow</div>
+            </a>
+            <a href="https://bdl.stat.gov.pl/" target="_blank" class="source-link">
+              <div class="source-name">BDL — GUS</div>
+              <div class="source-desc">Bank Danych Lokalnych — statystyki cen i rynku nieruchomosci</div>
+            </a>
+            <a href="https://nbp.pl/publikacje/cykliczne-materialy-analityczne/rynek-nieruchomosci/raport-kwartalny/" target="_blank" class="source-link">
+              <div class="source-name">NBP — Raporty kwartalne</div>
+              <div class="source-desc">Narodowy Bank Polski — analizy rynku i srednie ceny w najwiekszych miastach</div>
+            </a>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- FORM -->
-    <div class="container">
-      <div id="form-section" class="card form-card">
-        <div class="card-header">
-          <h2>Parametry analizy</h2>
-          <span class="card-badge">DANE WEJŚCIOWE</span>
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label for="rcn-miasto">Miasto</label>
-            <select id="rcn-miasto">
-              <option value="">Wybierz miasto</option>
-              <option value="Gdańsk">Gdańsk</option>
-              <option value="Sopot">Sopot</option>
-              <option value="Gdynia">Gdynia</option>
-              <option value="Warszawa">Warszawa</option>
-              <option value="Kraków">Kraków</option>
-              <option value="Wrocław">Wrocław</option>
-              <option value="Poznań">Poznań</option>
-              <option value="Łódź">Łódź</option>
-              <option value="Szczecin">Szczecin</option>
-              <option value="Lublin">Lublin</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rcn-dzielnica">Ulica / dzielnica (opcjonalne)</label>
-            <input type="text" id="rcn-dzielnica" placeholder="np. Polanki, Oliwa, Grunwaldzka...">
-          </div>
-          <div class="field">
-            <label for="rcn-typ">Typ nieruchomości</label>
-            <select id="rcn-typ">
-              <option value="mieszkanie">Mieszkanie</option>
-              <option value="dom">Dom</option>
-              <option value="dzialka">Działka</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rcn-pokoje">Min. pokoje (opcjonalne)</label>
-            <select id="rcn-pokoje">
-              <option value="0">Wszystkie</option>
-              <option value="1">1+</option>
-              <option value="2">2+</option>
-              <option value="3">3+</option>
-              <option value="4">4+</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rcn-metraz">Metraż Twojej oferty (m²)</label>
-            <input type="number" id="rcn-metraz" placeholder="np. 68">
-          </div>
-          <div class="field">
-            <label for="rcn-cena">Cena Twojej oferty (PLN)</label>
-            <input type="number" id="rcn-cena" placeholder="np. 785000">
-          </div>
-        </div>
-        <button id="generate-btn" class="btn-primary">
-          <span class="btn-icon">📊</span>
-          Generuj raport
-        </button>
-      </div>
+    <footer class="app-footer">
+      <p>RealTools AI &mdash; dane z <a href="https://www.geoportal.gov.pl" target="_blank">Rejestru Cen Nieruchomosci</a></p>
+      <p style="margin-top:4px;font-size:11px;color:var(--text-4)">Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463)</p>
+    </footer>
 
-      <!-- REPORT OUTPUT -->
-      <div id="report-output" class="hidden">
-        <div class="output-header">
-          <div class="output-actions">
-            <button id="print-btn" class="btn-gold">📄 Pobierz PDF</button>
-            <button id="new-btn" class="btn-ghost">← Nowa analiza</button>
-          </div>
-        </div>
-        <div id="report-container">
-          <!-- Generated by JS -->
-        </div>
-        <div class="output-footer">
-          <button id="print-btn-bottom" class="btn-gold">📄 Pobierz PDF</button>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <footer class="app-footer">
-    <p>RealTools AI — Prawdziwe dane z Rejestru Cen Nieruchomości (RCN)</p>
-    <p class="footer-sub">Źródło: geoportal.gov.pl · WFS API · Dane z aktów notarialnych</p>
-  </footer>
+  </div>
 
   <script src="app.js"></script>
 </body>
