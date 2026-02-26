@@ -509,21 +509,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const verdictColor = assessCard.querySelector('.gauge-verdict')?.style?.color || '#4f46e5';
 
       assessHtml = `
-        <div style="background:#f5f3ff;border:1px solid #c7c5f5;border-radius:8px;padding:20px 24px;margin-bottom:16px;page-break-inside:avoid">
-          <div style="font-size:14px;font-weight:700;color:#4f46e5;margin-bottom:16px">Ocena oferty</div>
-          <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+        <div style="background-color:#f5f3ff;border:1px solid #c7c5f5;padding:18px 20px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;color:#4f46e5;margin-bottom:14px">Ocena oferty</div>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
             <tr>
               ${metrics.map(m => `
-                <td style="background:#fff;border:1px solid #e2e2ee;border-radius:6px;padding:12px;text-align:center;width:25%">
-                  <div style="font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${m.lbl}</div>
-                  <div style="font-size:16px;font-weight:700;color:${m.color}">${m.val}</div>
+                <td style="background-color:#ffffff;border:1px solid #e2e2ee;padding:10px;text-align:center;width:25%">
+                  <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">${m.lbl}</div>
+                  <div style="font-size:15px;font-weight:700;color:${m.color}">${m.val}</div>
                 </td>
-              `).join('<td style="width:8px"></td>')}
+              `).join('')}
             </tr>
           </table>
-          <div style="background:#fff;border:1px solid #e2e2ee;border-left:3px solid #4f46e5;border-radius:6px;padding:14px">
-            <div style="font-size:13px;font-weight:700;color:${verdictColor};margin-bottom:4px">${verdict}</div>
-            <div style="font-size:12px;color:#64748b;line-height:1.5">${detail}</div>
+          <div style="background-color:#ffffff;border:1px solid #e2e2ee;border-left:3px solid #4f46e5;padding:12px">
+            <div style="font-size:12px;font-weight:700;color:${verdictColor};margin-bottom:3px">${verdict}</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.5">${detail}</div>
           </div>
         </div>
       `;
@@ -532,43 +532,43 @@ document.addEventListener("DOMContentLoaded", () => {
     // Source footer from report
     const srcFooter = container.querySelector('.report-footer')?.textContent?.trim() || '';
 
-    // Build clean PDF HTML
+    // Build clean PDF HTML — NO flex, NO grid, NO gradients, ONLY tables + solid colors
+    // html2canvas requires: on-screen element, simple CSS, pixel widths
     const pdfHtml = `
-      <div style="font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1e1e2e;line-height:1.5;padding:0;font-size:12px">
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#1e1e2e;line-height:1.5;padding:16px;font-size:12px;width:760px;background:#ffffff">
+
         <!-- Header -->
-        <table style="width:100%;border-collapse:collapse;margin-bottom:18px;border-bottom:2px solid #4f46e5;padding-bottom:12px">
+        <table style="width:100%;border-collapse:collapse;border-bottom:2px solid #4f46e5;margin-bottom:16px">
           <tr>
-            <td style="padding-bottom:12px">
+            <td style="padding-bottom:10px;vertical-align:middle">
               <table style="border-collapse:collapse"><tr>
-                <td style="width:28px;height:28px;background:#4f46e5;border-radius:6px;text-align:center;vertical-align:middle;color:white;font-weight:900;font-size:11px;letter-spacing:-0.5px">RT</td>
-                <td style="padding-left:8px;font-size:15px;font-weight:700">RealTools <span style="color:#4f46e5;font-weight:400">AI</span></td>
+                <td style="width:26px;height:26px;background-color:#4f46e5;color:#ffffff;font-weight:900;font-size:10px;text-align:center;vertical-align:middle">RT</td>
+                <td style="padding-left:8px;font-size:15px;font-weight:700;color:#1e1e2e">RealTools <span style="color:#4f46e5;font-weight:400">AI</span></td>
               </tr></table>
             </td>
-            <td style="text-align:right;font-size:10px;color:#94a3b8;padding-bottom:12px;line-height:1.4">
-              Raport wygenerowany: ${today}<br>Dane: Rejestr Cen Nieruchomosci (RCN)
+            <td style="text-align:right;font-size:10px;color:#94a3b8;padding-bottom:10px;vertical-align:middle">
+              Raport: ${today}<br>Rejestr Cen Nieruchomosci
             </td>
           </tr>
         </table>
 
         <!-- Report title -->
-        <div style="background:linear-gradient(135deg,#f0f0ff,#f8f7ff);border:1px solid #c7c5f5;border-left:4px solid #4f46e5;border-radius:8px;padding:22px 26px;margin-bottom:16px;page-break-inside:avoid">
-          <div style="font-size:9px;font-weight:700;letter-spacing:4px;color:#4f46e5;text-transform:uppercase;margin-bottom:6px">Raport analizy porownawczej</div>
-          <div style="font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:14px;color:#1e1e2e">${city}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            ${pills.map(p => `<span style="display:inline-block;font-size:10px;color:#64748b;background:#fff;border:1px solid #e2e2ee;padding:3px 10px;border-radius:4px">${p}</span>`).join('')}
-          </div>
+        <div style="background-color:#f0f0ff;border:1px solid #c7c5f5;border-left:4px solid #4f46e5;padding:18px 22px;margin-bottom:14px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:3px;color:#4f46e5;text-transform:uppercase;margin-bottom:4px">Raport analizy porownawczej</div>
+          <div style="font-size:24px;font-weight:800;color:#1e1e2e;margin-bottom:10px">${city}</div>
+          ${pills.map(p => `<span style="display:inline-block;font-size:9px;color:#64748b;background-color:#ffffff;border:1px solid #e2e2ee;padding:2px 8px;margin-right:4px;margin-bottom:4px">${p}</span>`).join('')}
         </div>
 
         <!-- Stats -->
         ${stats.length ? `
-        <table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
           <tr>
             ${stats.map(s => `
-              <td style="background:${s.isPrimary ? 'linear-gradient(135deg,#f0f0ff,#fafafa)' : '#fafafa'};border:1px solid ${s.isPrimary ? '#c7c5f5' : '#e8e8ee'};border-radius:8px;padding:16px;text-align:left;vertical-align:top;page-break-inside:avoid">
-                <div style="font-size:9px;font-weight:600;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">${s.label}</div>
-                <div style="font-size:${s.isPrimary ? '28px' : '22px'};font-weight:800;color:${s.isPrimary ? '#4f46e5' : '#1e1e2e'};line-height:1;letter-spacing:-0.5px">${s.value}</div>
-                ${s.badgeText ? `<div style="display:inline-block;font-size:10px;font-weight:600;color:${s.badgeText.includes('↑') ? '#16a34a' : '#dc2626'};background:${s.badgeText.includes('↑') ? '#ecfdf5' : '#fef2f2'};padding:2px 8px;border-radius:10px;margin-top:8px">${s.badgeText}</div>` : ''}
-                ${s.subLabel ? `<div style="font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:8px">${s.subLabel}</div>` : ''}
+              <td style="background-color:${s.isPrimary ? '#f0f0ff' : '#fafafa'};border:1px solid ${s.isPrimary ? '#c7c5f5' : '#e8e8ee'};padding:14px;text-align:left;vertical-align:top;width:${s.isPrimary ? '30%' : '23%'}">
+                <div style="font-size:8px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${s.label}</div>
+                <div style="font-size:${s.isPrimary ? '26px' : '20px'};font-weight:800;color:${s.isPrimary ? '#4f46e5' : '#1e1e2e'}">${s.value}</div>
+                ${s.badgeText ? `<div style="font-size:9px;font-weight:700;color:${s.badgeText.includes('\u2191') ? '#16a34a' : '#dc2626'};margin-top:6px">${s.badgeText}</div>` : ''}
+                ${s.subLabel ? `<div style="font-size:8px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-top:6px">${s.subLabel}</div>` : ''}
               </td>
             `).join('')}
           </tr>
@@ -577,11 +577,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <!-- Chart -->
         ${chartImg ? `
-        <div style="background:#fafafa;border:1px solid #e8e8ee;border-radius:8px;padding:18px 20px;margin-bottom:16px;page-break-inside:avoid">
-          <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
+        <div style="background-color:#fafafa;border:1px solid #e8e8ee;padding:16px;margin-bottom:14px">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
             <tr>
-              <td style="font-size:14px;font-weight:700;color:#1e1e2e">Trend cenowy</td>
-              <td style="text-align:right;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase">Kwartaly</td>
+              <td style="font-size:13px;font-weight:700;color:#1e1e2e">Trend cenowy</td>
+              <td style="text-align:right;font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Kwartaly</td>
             </tr>
           </table>
           <img src="${chartImg}" style="width:100%;height:auto;display:block" />
@@ -590,27 +590,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <!-- Table -->
         ${tableRows.length ? `
-        <div style="background:#fff;border:1px solid #e8e8ee;border-radius:8px;padding:18px 20px;margin-bottom:16px">
-          <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
+        <div style="border:1px solid #e8e8ee;padding:16px;margin-bottom:14px;background-color:#ffffff">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
             <tr>
-              <td style="font-size:14px;font-weight:700;color:#1e1e2e">Transakcje z aktow notarialnych</td>
-              <td style="text-align:right;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase">${tableRows.length} najnowszych</td>
+              <td style="font-size:13px;font-weight:700;color:#1e1e2e">Transakcje z aktow notarialnych</td>
+              <td style="text-align:right;font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">${tableRows.length} najnowszych</td>
             </tr>
           </table>
-          <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <table style="width:100%;border-collapse:collapse;font-size:10px">
             <thead>
               <tr>
-                ${tableHeaders.map(h => `<th style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;text-align:left;padding:8px 6px;border-bottom:2px solid #e8e8ee;white-space:nowrap">${h}</th>`).join('')}
+                ${tableHeaders.map(h => `<th style="font-size:7px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;text-align:left;padding:6px 4px;border-bottom:2px solid #e8e8ee">${h}</th>`).join('')}
               </tr>
             </thead>
             <tbody>
               ${tableRows.map(row => `
                 <tr>
                   ${row.map((cell, i) => {
-                    let style = 'padding:7px 6px;border-bottom:1px solid #f1f1f5;color:#475569;';
-                    if (i === 1) style += 'color:#1e1e2e;font-weight:500;'; // address
-                    if (i === row.length - 1) style += 'color:#4f46e5;font-weight:700;white-space:nowrap;'; // price/m2
-                    if (i === row.length - 2) style += 'white-space:nowrap;'; // price
+                    let style = 'padding:5px 4px;border-bottom:1px solid #f1f1f5;color:#475569;font-size:10px;';
+                    if (i === 1) style += 'color:#1e1e2e;font-weight:500;';
+                    if (i === row.length - 1) style += 'color:#4f46e5;font-weight:700;';
                     return `<td style="${style}">${cell}</td>`;
                   }).join('')}
                 </tr>
@@ -624,45 +623,47 @@ document.addEventListener("DOMContentLoaded", () => {
         ${assessHtml}
 
         <!-- Source -->
-        <div style="text-align:center;padding:12px 0;font-size:9px;color:#94a3b8;border-top:1px solid #e8e8ee;margin-top:8px">${srcFooter}</div>
+        <div style="text-align:center;padding:10px 0;font-size:8px;color:#94a3b8;border-top:1px solid #e8e8ee;margin-top:6px">${srcFooter}</div>
 
         <!-- Footer -->
-        <div style="text-align:center;padding-top:14px;margin-top:10px;border-top:2px solid #4f46e5;font-size:9px;color:#94a3b8">
+        <div style="text-align:center;padding-top:10px;margin-top:8px;border-top:2px solid #4f46e5;font-size:8px;color:#94a3b8">
           <strong style="color:#4f46e5">RealTools AI</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomosci (geoportal.gov.pl)<br>
           Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.
         </div>
       </div>
     `;
 
-    // Create temporary hidden container
+    // Create ON-SCREEN container (html2canvas needs visible elements)
     const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;';
+    tempDiv.style.cssText = 'position:absolute;top:0;left:0;z-index:99999;width:794px;background:#ffffff;';
     tempDiv.innerHTML = pdfHtml;
     document.body.appendChild(tempDiv);
 
     const opt = {
-      margin: [8, 10, 12, 10],
+      margin: [6, 8, 10, 8],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg', quality: 0.95 },
       html2canvas: {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        width: 794, // A4 at 96dpi
+        windowWidth: 794,
+        scrollX: 0,
+        scrollY: 0,
       },
       jsPDF: {
         unit: 'mm',
         format: 'a4',
         orientation: 'portrait',
       },
-      pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'td', 'div[style*="page-break-inside"]'] },
+      pagebreak: { mode: ['css', 'legacy'] },
     };
 
     html2pdf().set(opt).from(tempDiv).save().then(() => {
       document.body.removeChild(tempDiv);
     }).catch(() => {
-      document.body.removeChild(tempDiv);
+      if (tempDiv.parentNode) document.body.removeChild(tempDiv);
     });
   }
 
