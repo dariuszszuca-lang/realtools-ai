@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/api/rcn", "destination": "/api/rcn" },
+    { "source": "/api/market-data", "destination": "/api/market-data" }
+  ],
+  "functions": {
+    "api/rcn.py": {
+      "maxDuration": 60
+    }
+  }
+}
