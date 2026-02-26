@@ -437,8 +437,42 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF
-  const doPrint = () => window.print();
+  // PDF — inject print header/footer before printing
+  function doPrint() {
+    // Add print header if not already there
+    const container = document.getElementById("report-container");
+    if (!container.querySelector('.print-header')) {
+      const today = new Date().toLocaleDateString('pl-PL');
+      const header = document.createElement('div');
+      header.className = 'print-header';
+      header.style.display = 'none';
+      header.innerHTML = `
+        <div class="print-header__logo">
+          <div class="print-header__mark">RT</div>
+          <div class="print-header__name">RealTools <span>AI</span></div>
+        </div>
+        <div class="print-header__meta">
+          Raport wygenerowany: ${today}<br>
+          Dane: Rejestr Cen Nieruchomosci (RCN)
+        </div>
+      `;
+      container.insertBefore(header, container.firstChild);
+    }
+
+    // Add print footer if not already there
+    if (!container.querySelector('.print-footer')) {
+      const footer = document.createElement('div');
+      footer.className = 'print-footer';
+      footer.style.display = 'none';
+      footer.innerHTML = `
+        <strong>RealTools AI</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomosci (geoportal.gov.pl)<br>
+        Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.
+      `;
+      container.appendChild(footer);
+    }
+
+    window.print();
+  }
   document.getElementById("print-btn").addEventListener("click", doPrint);
   document.getElementById("print-btn-bottom").addEventListener("click", doPrint);
 });
