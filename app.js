@@ -437,15 +437,16 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — inject print header/footer before printing
-  function doPrint() {
-    // Add print header if not already there
+  // PDF — direct download via html2pdf.js
+  function downloadPDF() {
     const container = document.getElementById("report-container");
-    if (!container.querySelector('.print-header')) {
+
+    // Inject print header
+    let header = container.querySelector('.print-header');
+    if (!header) {
       const today = new Date().toLocaleDateString('pl-PL');
-      const header = document.createElement('div');
+      header = document.createElement('div');
       header.className = 'print-header';
-      header.style.display = 'none';
       header.innerHTML = `
         <div class="print-header__logo">
           <div class="print-header__mark">RT</div>
@@ -458,23 +459,58 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       container.insertBefore(header, container.firstChild);
     }
+    header.style.display = 'flex';
 
-    // Add print footer if not already there
-    if (!container.querySelector('.print-footer')) {
-      const footer = document.createElement('div');
+    // Inject print footer
+    let footer = container.querySelector('.print-footer');
+    if (!footer) {
+      footer = document.createElement('div');
       footer.className = 'print-footer';
-      footer.style.display = 'none';
       footer.innerHTML = `
         <strong>RealTools AI</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomosci (geoportal.gov.pl)<br>
         Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.
       `;
       container.appendChild(footer);
     }
+    footer.style.display = 'block';
 
-    window.print();
+    // Get city name for filename
+    const cityEl = container.querySelector('.report-city');
+    const city = cityEl ? cityEl.textContent.trim().replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]/g, '').trim() : 'raport';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `RealTools_${city}_${dateStr}.pdf`;
+
+    // Generate PDF
+    const opt = {
+      margin: [10, 12, 14, 12],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    };
+
+    // Temporarily apply print-like styles
+    container.classList.add('pdf-render');
+
+    html2pdf().set(opt).from(container).save().then(() => {
+      container.classList.remove('pdf-render');
+      header.style.display = 'none';
+      footer.style.display = 'none';
+    });
   }
-  document.getElementById("print-btn").addEventListener("click", doPrint);
-  document.getElementById("print-btn-bottom").addEventListener("click", doPrint);
+
+  document.getElementById("print-btn").addEventListener("click", downloadPDF);
+  document.getElementById("print-btn-bottom").addEventListener("click", downloadPDF);
 });
 
 // Spin keyframe (for loading button)
