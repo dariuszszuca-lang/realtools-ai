@@ -705,7 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — build clean HTML, render in hidden div, html2pdf → direct download
+  // PDF — render actual DOM with light theme, canvases swapped for images
   function downloadPDF() {
     if (typeof html2pdf === 'undefined') {
       alert('Biblioteka PDF nie załadowała się. Odśwież stronę i spróbuj ponownie.');
@@ -715,208 +715,87 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("report-container");
     if (!container) return;
 
-    const today = new Date().toLocaleDateString('pl-PL');
-    const todayFile = new Date().toISOString().slice(0, 10);
-
-    // Extract data from DOM
+    // --- File name ---
     const city = container.querySelector('.report-city')?.textContent?.trim() || 'Raport';
-    const pills = Array.from(container.querySelectorAll('.report-pill')).map(p => p.textContent.trim());
     const safeName = city.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\s·]/g, '').replace(/[\s·]+/g, '_').replace(/_+$/, '');
-    const filename = `RCT_${safeName}_${todayFile}.pdf`;
+    const filename = `RCT_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
 
-    // Loading state
+    // --- Loading state ---
     const btns = [document.getElementById('print-btn'), document.getElementById('print-btn-bottom')].filter(Boolean);
-    const originalHTML = btns[0]?.innerHTML;
-    btns.forEach(btn => {
-      btn.disabled = true;
-      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF...`;
+    const origBtnHTML = btns[0]?.innerHTML;
+    btns.forEach(b => {
+      b.disabled = true;
+      b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF…';
     });
 
-    // Stats
-    const stats = [];
-    container.querySelectorAll('.stat-card').forEach(card => {
-      const label = card.querySelector('.stat-label')?.textContent?.trim() || '';
-      const counter = card.querySelector('.counter');
-      let value = '';
-      if (counter) {
-        value = fmt(parseInt(counter.dataset.target));
-        const unit = card.querySelector('.stat-unit');
-        if (unit) value += ' ' + unit.textContent.trim();
-      }
-      const badge = card.querySelector('.stat-badge');
-      const badgeText = badge ? badge.textContent.trim() : '';
-      const isPrimary = card.classList.contains('primary');
-      stats.push({ label, value, badgeText, isPrimary });
+    // --- Prepare DOM for PDF capture ---
+
+    // 1) Fix counter values (they animate from 0)
+    container.querySelectorAll('.counter').forEach(el => {
+      el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    // Charts as base64
-    const charts = [];
-    container.querySelectorAll('canvas').forEach(canvas => {
+    // 2) Replace Chart.js <canvas> with static <img> (html2canvas can't render Chart.js canvases)
+    const canvasBackup = [];
+    container.querySelectorAll('canvas').forEach(cvs => {
       try {
-        const section = canvas.closest('.chart-section, .district-section');
-        const title = section?.querySelector('.section-title')?.textContent?.trim() || '';
-        const tag = section?.querySelector('.section-tag')?.textContent?.trim() || '';
-        charts.push({ img: canvas.toDataURL('image/png', 1.0), title, tag });
-      } catch(e) {}
+        const url = cvs.toDataURL('image/png', 1.0);
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.cssText = 'width:100%;height:auto;display:block;';
+        canvasBackup.push({ parent: cvs.parentNode, canvas: cvs, img });
+        cvs.parentNode.replaceChild(img, cvs);
+      } catch (e) { /* tainted canvas — skip */ }
     });
 
-    // Table
-    const tableHeaders = [];
-    container.querySelectorAll('thead th').forEach(th => tableHeaders.push(th.textContent.trim()));
-    const tableRows = [];
-    container.querySelectorAll('tbody tr').forEach(tr => {
-      const cells = Array.from(tr.querySelectorAll('td')).map(td => ({
-        text: td.textContent.trim(),
-        isAddr: td.classList.contains('cell-addr'),
-        isPrice: td.classList.contains('cell-price'),
-        isDistrict: td.classList.contains('cell-district-tag'),
-      }));
-      tableRows.push(cells);
-    });
+    // 3) Switch to light PDF theme (comprehensive CSS overrides in .pdf-render)
+    container.classList.add('pdf-render');
 
-    // Assessment
-    let assessBlock = '';
-    const assessCard = container.querySelector('.assess-card');
-    if (assessCard) {
-      const metrics = [];
-      assessCard.querySelectorAll('.assess-metric').forEach(m => {
-        metrics.push({
-          lbl: m.querySelector('.assess-metric-label')?.textContent?.trim() || '',
-          val: m.querySelector('.assess-metric-value')?.textContent?.trim() || '',
-          color: m.querySelector('.assess-metric-value')?.style?.color || '#1e1e2e',
-        });
-      });
-      const verdict = assessCard.querySelector('.gauge-verdict')?.textContent?.trim() || '';
-      const detail = assessCard.querySelector('.gauge-detail')?.textContent?.trim() || '';
-      const verdictColor = assessCard.querySelector('.gauge-verdict')?.style?.color || '#4f46e5';
-      assessBlock = `
-        <div class="section assess">
-          <h3 style="color:#4f46e5">Ocena oferty</h3>
-          <table class="metrics"><tr>
-            ${metrics.map(m => `<td><div class="mlabel">${m.lbl}</div><div class="mval" style="color:${m.color}">${m.val}</div></td>`).join('')}
-          </tr></table>
-          <div class="verdict-box">
-            <div class="verdict" style="color:${verdictColor}">${verdict}</div>
-            <div class="vdetail">${detail}</div>
-          </div>
-        </div>`;
-    }
+    // 4) Save scroll position, scroll to top for html2canvas
+    const savedScroll = window.scrollY;
+    window.scrollTo(0, 0);
 
-    // District ranking
-    let districtBlock = '';
-    const distTable = container.querySelector('.district-table');
-    if (distTable) {
-      const dHeaders = [];
-      distTable.querySelectorAll('thead th').forEach(th => dHeaders.push(th.textContent.trim()));
-      const dRows = [];
-      distTable.querySelectorAll('tbody tr').forEach(tr => {
-        dRows.push(Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim()));
-      });
-      if (dRows.length) {
-        districtBlock = `
-          <div class="section">
-            <h3>Ranking dzielnic</h3>
-            <table class="data" style="margin-top:8px">
-              <thead><tr>${dHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-              <tbody>${dRows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
-            </table>
-          </div>`;
-      }
-    }
+    // 5) Wait for repaint + images to decode
+    setTimeout(() => {
+      const allImgs = container.querySelectorAll('img');
+      const imgLoaded = Array.from(allImgs).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+      );
 
-    const srcFooter = container.querySelector('.report-footer')?.textContent?.trim() || '';
+      Promise.all(imgLoaded).then(() => {
+        const opt = {
+          margin:      [10, 12, 12, 12],
+          filename:    filename,
+          image:       { type: 'jpeg', quality: 0.92 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowWidth: 800,
+          },
+          jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak:   { mode: ['css', 'legacy'], avoid: ['.stat-card', '.assess-card', '.chart-section', '.district-section'] },
+        };
 
-    // Build clean HTML for PDF
-    const pdfHTML = `
-      <div style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:#1e1e2e;font-size:10pt;line-height:1.5;padding:0;max-width:700px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #4f46e5;padding-bottom:10px;margin-bottom:18px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:32px;height:32px;background:#4f46e5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:10px;letter-spacing:-0.5px;">RCT</div>
-            <div style="font-size:15px;font-weight:700;">Rejestr Cen <span style="color:#4f46e5;font-weight:400;">Transakcyjnych</span></div>
-          </div>
-          <div style="text-align:right;font-size:8pt;color:#94a3b8;">Raport: ${today}<br>Rejestr Cen Nieruchomości</div>
-        </div>
-
-        <div style="background:#f0f0ff;border:1px solid #c7c5f5;border-left:4px solid #4f46e5;border-radius:8px;padding:20px 24px;margin-bottom:16px;">
-          <div style="font-size:7.5pt;font-weight:700;letter-spacing:3px;color:#4f46e5;text-transform:uppercase;margin-bottom:4px;">Raport cen transakcyjnych</div>
-          <div style="font-size:22pt;font-weight:800;letter-spacing:-1px;margin-bottom:10px;">${city}</div>
-          ${pills.map(p => `<span style="display:inline-block;font-size:8pt;color:#64748b;background:#fff;border:1px solid #e2e2ee;padding:2px 8px;border-radius:4px;margin-right:4px;margin-bottom:4px;">${p}</span>`).join('')}
-        </div>
-
-        ${stats.length ? `<div style="display:flex;gap:10px;margin-bottom:16px;">
-          ${stats.map(s => `<div style="flex:${s.isPrimary ? '1.5' : '1'};background:${s.isPrimary ? '#f0f0ff' : '#fafafa'};border:1px solid ${s.isPrimary ? '#c7c5f5' : '#e8e8ee'};border-radius:8px;padding:14px 16px;">
-            <div style="font-size:7pt;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">${s.label}</div>
-            <div style="font-size:${s.isPrimary ? '24pt' : '18pt'};font-weight:800;line-height:1;${s.isPrimary ? 'color:#4f46e5;' : ''}">${s.value}</div>
-            ${s.badgeText ? `<div style="font-size:8pt;font-weight:700;margin-top:6px;color:${s.badgeText.includes('↑') ? '#16a34a' : '#dc2626'}">${s.badgeText}</div>` : ''}
-          </div>`).join('')}
-        </div>` : ''}
-
-        ${charts.map(c => `<div style="background:#fafafa;border:1px solid #e8e8ee;border-radius:8px;padding:18px 20px;margin-bottom:16px;page-break-inside:avoid;">
-          ${c.title ? `<div style="display:flex;justify-content:space-between;"><h3 style="font-size:11pt;font-weight:700;margin:0;">${c.title}</h3><span style="font-size:7pt;color:#94a3b8;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${c.tag}</span></div>` : ''}
-          <img src="${c.img}" style="width:100%;margin-top:10px;" />
-        </div>`).join('')}
-
-        ${tableRows.length ? `<div style="background:#fff;border:1px solid #e8e8ee;border-radius:8px;padding:18px 20px;margin-bottom:16px;">
-          <div style="display:flex;justify-content:space-between;"><h3 style="font-size:11pt;font-weight:700;margin:0;">Transakcje z aktów notarialnych</h3><span style="font-size:7pt;color:#94a3b8;font-weight:700;">${tableRows.length} najnowszych</span></div>
-          <table style="width:100%;border-collapse:collapse;margin-top:10px;">
-            <thead><tr>${tableHeaders.map(h => `<th style="font-size:7pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;text-align:left;padding:6px 8px;border-bottom:2px solid #e8e8ee;">${h}</th>`).join('')}</tr></thead>
-            <tbody>${tableRows.map(row => `<tr>${row.map(c => {
-              let style = 'font-size:8.5pt;padding:5px 8px;border-bottom:1px solid #f1f1f5;color:#475569;';
-              if (c.isAddr) style += 'color:#1e1e2e;font-weight:500;';
-              if (c.isPrice) style += 'color:#4f46e5;font-weight:700;white-space:nowrap;';
-              if (c.isDistrict) style += 'color:#4f46e5;font-size:8pt;';
-              return `<td style="${style}">${c.text}</td>`;
-            }).join('')}</tr>`).join('')}</tbody>
-          </table>
-        </div>` : ''}
-
-        ${districtBlock}
-        ${assessBlock}
-
-        <div style="text-align:center;font-size:7.5pt;color:#94a3b8;border-top:1px solid #e8e8ee;padding-top:10px;margin-top:10px;">${srcFooter}</div>
-        <div style="text-align:center;font-size:7.5pt;color:#94a3b8;border-top:2px solid #4f46e5;padding-top:10px;margin-top:10px;"><strong style="color:#4f46e5;">RCT — Rejestr Cen Transakcyjnych</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomości (geoportal.gov.pl)<br>Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.</div>
-      </div>
-    `;
-
-    // Create offscreen container — must be in-flow for html2canvas
-    const wrapper = document.createElement('div');
-    wrapper.id = 'pdf-wrapper';
-    wrapper.style.cssText = 'position:absolute;top:0;left:0;width:700px;background:#fff;z-index:99999;opacity:0;pointer-events:none;';
-    wrapper.innerHTML = pdfHTML;
-    document.body.appendChild(wrapper);
-
-    // Wait for images to load before rendering
-    const images = wrapper.querySelectorAll('img');
-    const imagePromises = Array.from(images).map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
-    });
-
-    Promise.all(imagePromises).then(() => {
-      // Make visible for html2canvas (it needs rendered pixels)
-      wrapper.style.opacity = '1';
-
-      const opt = {
-        margin: [10, 10, 14, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.92 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0, windowWidth: 700 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'], avoid: ['.section', '.assess'] },
-      };
-
-      return html2pdf().set(opt).from(wrapper.firstElementChild).save();
-    })
-      .then(() => {
-        document.body.removeChild(wrapper);
-        btns.forEach(btn => { btn.disabled = false; btn.innerHTML = originalHTML; });
+        return html2pdf().set(opt).from(container).save();
       })
-      .catch((err) => {
+      .then(restore)
+      .catch(err => {
         console.error('PDF error:', err);
-        if (wrapper.parentElement) document.body.removeChild(wrapper);
-        btns.forEach(btn => { btn.disabled = false; btn.innerHTML = originalHTML; });
+        restore();
         alert('Nie udało się wygenerować PDF. Spróbuj ponownie.');
       });
+    }, 400);
+
+    function restore() {
+      container.classList.remove('pdf-render');
+      canvasBackup.forEach(b => {
+        try { b.parent.replaceChild(b.canvas, b.img); } catch (e) {}
+      });
+      window.scrollTo(0, savedScroll);
+      btns.forEach(b => { b.disabled = false; b.innerHTML = origBtnHTML; });
+    }
   }
 
   document.getElementById("print-btn").addEventListener("click", downloadPDF);

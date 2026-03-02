@@ -243,9 +243,13 @@ body::before {
 
 /* --- html2pdf specific --- */
 .pdf-render {
-  width: 1080px !important;
-  max-width: 1080px !important;
+  width: 800px !important;
+  max-width: 800px !important;
   overflow: visible !important;
+}
+.pdf-render * {
+  animation: none !important;
+  transition: none !important;
 }
 .pdf-render .stats-row {
   display: grid !important;
@@ -256,14 +260,19 @@ body::before {
   grid-template-columns: 1fr !important;
 }
 .pdf-render .chart-wrap {
-  height: 260px !important;
+  height: auto !important;
+  min-height: 180px !important;
 }
 .pdf-render .district-chart-wrap {
-  min-height: 220px !important;
-  height: 220px !important;
+  height: auto !important;
+  min-height: 160px !important;
 }
-.pdf-render canvas {
+.pdf-render img {
   max-width: 100% !important;
+  height: auto !important;
+}
+.pdf-render .table-section {
+  overflow: visible !important;
 }
 .pdf-render .chart-section,
 .pdf-render .table-section,
@@ -271,6 +280,13 @@ body::before {
 .pdf-render .district-section {
   page-break-inside: avoid;
   break-inside: avoid;
+}
+.pdf-render .gauge-bar {
+  background: #e8e8ee !important;
+}
+.pdf-render .gauge-marker {
+  background: #1e1e2e !important;
+  box-shadow: none !important;
 }
 .pdf-render .cell-district-tag {
   color: #4f46e5 !important;
