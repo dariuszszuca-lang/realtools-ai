@@ -47,7 +47,7 @@ const DISTRICT_MAP = {
     "Władysława Cieszyńskiego": "Wrzeszcz", "Powstańców Warszawskich": "Wrzeszcz",
     "Płowce": "Wrzeszcz", "Śląska": "Wrzeszcz",
     "Klonowa": "Wrzeszcz", "Miszewskiego": "Wrzeszcz",
-    "Waryńskiego": "Wrzeszcz",
+    "Waryńskiego": "Wrzeszcz", "Legionów": "Wrzeszcz",
     "Kopernika": "Wrzeszcz", "Uphagena": "Wrzeszcz",
     "Sobótki": "Wrzeszcz", "Kołłątaja": "Wrzeszcz",
     "Jaśkowa Dolina": "Wrzeszcz", "Konopnickiej": "Wrzeszcz",
@@ -135,7 +135,7 @@ const DISTRICT_MAP = {
     // --- Letnica / Nowy Port ---
     "Letnicka": "Letnica", "Marynarki Polskiej": "Letnica",
     "Konrada Korzeniowskiego": "Nowy Port", "Oliwska": "Nowy Port",
-    "Wyzwolenia": "Nowy Port", "Legionów": "Nowy Port",
+    "Wyzwolenia": "Nowy Port",
 
     // --- Stogi ---
     "Skiby": "Stogi",
