@@ -299,7 +299,8 @@ const DISTRICT_MAP = {
 
 /**
  * Przypisz dzielnicę na podstawie miasta i adresu.
- * Szuka najpierw w mapie danego miasta, potem we wszystkich mapach (fallback).
+ * ZAWSZE szuka w mapie TEGO miasta z transakcji (nie z zapytania).
+ * Partial match tylko w obrębie tego samego miasta.
  */
 function getDistrict(city, address) {
   if (!city || !address) return null;
@@ -307,31 +308,27 @@ function getDistrict(city, address) {
   // Wyciągnij nazwę ulicy (bez numeru domu)
   const street = address.replace(/\s+\d+[\w\/\-]*\s*$/, '').trim();
 
+  // Szukaj mapy dla TEGO miasta (z transakcji)
+  const cityMap = DISTRICT_MAP[city];
+
   // Małe miasta bez mapowania — zwróć nazwę miasta
-  const primaryMap = DISTRICT_MAP[city];
-  if (primaryMap && Object.keys(primaryMap).length === 0) return city;
+  if (cityMap && Object.keys(cityMap).length === 0) return city;
 
-  // 1. Szukaj w mapie tego miasta (exact)
-  if (primaryMap && primaryMap[street]) return primaryMap[street];
+  // 1. Exact match w mapie tego miasta
+  if (cityMap && cityMap[street]) return cityMap[street];
 
-  // 2. Szukaj we WSZYSTKICH mapach (exact) — bbox łapie sąsiednie miasta
-  for (const [mapCity, map] of Object.entries(DISTRICT_MAP)) {
-    if (mapCity === city || Object.keys(map).length === 0) continue;
-    if (map[street]) return map[street];
-  }
-
-  // 3. Partial match — w mapie tego miasta
-  if (primaryMap) {
-    for (const [key, district] of Object.entries(primaryMap)) {
+  // 2. Partial match — TYLKO w mapie tego miasta
+  if (cityMap) {
+    for (const [key, district] of Object.entries(cityMap)) {
       if (street.includes(key) || key.includes(street)) return district;
     }
   }
 
-  // 4. Partial match — we wszystkich mapach
-  for (const [mapCity, map] of Object.entries(DISTRICT_MAP)) {
-    if (mapCity === city || Object.keys(map).length === 0) continue;
-    for (const [key, district] of Object.entries(map)) {
-      if (street.includes(key) || key.includes(street)) return district;
+  // 3. Miasto nieznane? Szukaj exact we wszystkich
+  if (!cityMap) {
+    for (const [, map] of Object.entries(DISTRICT_MAP)) {
+      if (Object.keys(map).length === 0) continue;
+      if (map[street]) return map[street];
     }
   }
 
