@@ -1,11 +1,12 @@
 {
-  "rewrites": [
-    { "source": "/api/rcn", "destination": "/api/rcn" },
-    { "source": "/api/market-data", "destination": "/api/market-data" }
-  ],
+  "version": 2,
   "functions": {
     "api/rcn.py": {
+      "runtime": "@vercel/python@4.5.0",
       "maxDuration": 60
+    },
+    "api/market-data.py": {
+      "runtime": "@vercel/python@4.5.0"
     }
   }
 }

@@ -1,0 +1,1 @@
+# RCT — zero external dependencies, Python stdlib only

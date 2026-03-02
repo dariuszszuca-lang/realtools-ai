@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════
-   RealTools AI v2.0 — Frontend
+   RCT — Rejestr Cen Transakcyjnych v3.0
    ═══════════════════════════════════════════ */
 
-const MONTHS_PL = ["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paz","lis","gru"];
+const MONTHS_PL = ["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"];
 const fmt = (n) => n.toLocaleString("pl-PL");
 const fmtPLN = (n) => fmt(n) + " PLN";
 
@@ -21,8 +21,12 @@ let cache = {};
 async function fetchData(city) {
   if (cache[city]) return cache[city];
   const r = await fetch(`/api/rcn?city=${encodeURIComponent(city)}`);
-  if (!r.ok) throw new Error(`Blad: ${r.status}`);
+  if (!r.ok) throw new Error(`Błąd: ${r.status}`);
   const d = await r.json();
+  // Wzbogać o dzielnice
+  if (d.transactions) {
+    d.transactions = enrichWithDistricts(d.transactions);
+  }
   cache[city] = d;
   return d;
 }
@@ -49,15 +53,19 @@ async function checkFreshness() {
       }
     }
   } catch (e) {
-    // Silent — badge stays default
+    // Silent
   }
 }
 
 // --- FILTERING ---
-function filterByAddress(txs, q) {
-  if (!q) return txs;
-  const lq = q.toLowerCase();
-  return txs.filter(t => (t.address || '').toLowerCase().includes(lq) || (t.city || '').toLowerCase().includes(lq));
+function filterTransactions(txs, query) {
+  if (!query) return txs;
+  const lq = query.toLowerCase();
+  return txs.filter(t =>
+    (t.address || '').toLowerCase().includes(lq) ||
+    (t.district || '').toLowerCase().includes(lq) ||
+    (t.city || '').toLowerCase().includes(lq)
+  );
 }
 
 // --- STATS ---
@@ -86,24 +94,25 @@ function computeQuarterly(txs) {
     .map(k => ({ label: k, avg: Math.round(q[k].reduce((a, b) => a + b, 0) / q[k].length), count: q[k].length }));
 }
 
-// --- CHART ---
-let chart = null;
+// --- CHARTS ---
+let trendChart = null;
+let districtChart = null;
 
-function renderChart(data) {
+function renderTrendChart(data) {
   const ctx = document.getElementById("trend-chart");
   if (!ctx) return;
-  if (chart) chart.destroy();
+  if (trendChart) trendChart.destroy();
 
   const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280);
   gradient.addColorStop(0, 'rgba(99,102,241,0.15)');
   gradient.addColorStop(1, 'rgba(99,102,241,0)');
 
-  chart = new Chart(ctx, {
+  trendChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: data.map(q => q.label),
       datasets: [{
-        label: "Srednia PLN/m2",
+        label: "Średnia PLN/m²",
         data: data.map(q => q.avg),
         borderColor: "#818cf8",
         backgroundColor: gradient,
@@ -131,7 +140,7 @@ function renderChart(data) {
           borderColor: "rgba(99,102,241,0.2)",
           borderWidth: 1,
           displayColors: false,
-          callbacks: { label: (c) => fmt(c.parsed.y) + " PLN/m2" },
+          callbacks: { label: (c) => fmt(c.parsed.y) + " PLN/m²" },
         },
       },
       scales: {
@@ -152,21 +161,87 @@ function renderChart(data) {
   });
 }
 
+function renderDistrictChart(districtStats) {
+  const ctx = document.getElementById("district-chart");
+  if (!ctx) return;
+  if (districtChart) districtChart.destroy();
+
+  const top = districtStats.slice(0, 12); // Max 12 dzielnic
+  const colors = top.map((_, i) => {
+    const hue = 240 + (i * 15); // Odcienie fioletu/indigo
+    return `hsla(${hue % 360}, 70%, 65%, 0.8)`;
+  });
+
+  districtChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: top.map(d => d.name),
+      datasets: [{
+        label: "Średnia PLN/m²",
+        data: top.map(d => d.avg),
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace('0.8', '1')),
+        borderWidth: 1,
+        borderRadius: 6,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(19,22,31,0.95)",
+          titleFont: { family: "'Inter'", size: 12, weight: '500' },
+          bodyFont: { family: "'Inter'", size: 14, weight: '700' },
+          padding: 14,
+          cornerRadius: 10,
+          borderColor: "rgba(99,102,241,0.2)",
+          borderWidth: 1,
+          displayColors: false,
+          callbacks: {
+            label: (c) => fmt(c.parsed.x) + " PLN/m²",
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255,255,255,0.03)", drawBorder: false },
+          ticks: {
+            color: "rgba(255,255,255,0.3)",
+            font: { family: "'Inter'", size: 11 },
+            callback: v => fmt(v),
+          },
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            color: "rgba(255,255,255,0.5)",
+            font: { family: "'Inter'", size: 12, weight: '500' },
+          },
+        },
+      },
+    },
+  });
+}
+
 // --- ASSESSMENT ---
 function assess(userPM2, stats) {
-  if (!stats) return { diff: 0, verdict: "BRAK DANYCH", detail: "Za malo transakcji.", color: "#64748b" };
+  if (!stats) return { diff: 0, verdict: "BRAK DANYCH", detail: "Za mało transakcji.", color: "#64748b" };
   const diff = +((userPM2 - stats.median) / stats.median * 100).toFixed(1);
   let verdict, detail, color;
   if (diff < -8) {
-    verdict = "Ponizej rynku"; detail = `Cena ${Math.abs(diff)}% ponizej mediany. Atrakcyjna oferta — szybka sprzedaz prawdopodobna.`; color = "#22c55e";
+    verdict = "Poniżej rynku"; detail = `Cena ${Math.abs(diff)}% poniżej mediany. Atrakcyjna oferta — szybka sprzedaż prawdopodobna.`; color = "#22c55e";
   } else if (diff < -3) {
-    verdict = "Lekko ponizej"; detail = `Cena ${Math.abs(diff)}% ponizej mediany. Konkurencyjna oferta.`; color = "#4ade80";
+    verdict = "Lekko poniżej"; detail = `Cena ${Math.abs(diff)}% poniżej mediany. Konkurencyjna oferta.`; color = "#4ade80";
   } else if (diff <= 3) {
-    verdict = "Cena rynkowa"; detail = `Cena zgodna z mediana (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#818cf8";
+    verdict = "Cena rynkowa"; detail = `Cena zgodna z medianą (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#818cf8";
   } else if (diff <= 8) {
-    verdict = "Lekko powyzej"; detail = `Cena +${diff}% powyzej mediany. Uzasadnione przy wyzszym standardzie.`; color = "#f59e0b";
+    verdict = "Lekko powyżej"; detail = `Cena +${diff}% powyżej mediany. Uzasadnione przy wyższym standardzie.`; color = "#f59e0b";
   } else {
-    verdict = "Powyzej rynku"; detail = `Cena +${diff}% powyzej mediany. Sprzedaz moze trwac dluzej.`; color = "#ef4444";
+    verdict = "Powyżej rynku"; detail = `Cena +${diff}% powyżej mediany. Sprzedaż może trwać dłużej.`; color = "#ef4444";
   }
   return { diff, verdict, detail, color };
 }
@@ -175,34 +250,148 @@ function assess(userPM2, stats) {
 function animateNumber(el, target) {
   const duration = 800;
   const start = performance.now();
-  const from = 0;
   function tick(now) {
     const t = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
-    el.textContent = fmt(Math.round(from + (target - from) * eased));
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = fmt(Math.round(target * eased));
     if (t < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
 
-// --- GAUGE POSITION ---
+// --- GAUGE ---
 function gaugePosition(diff) {
-  // Map diff from -20..+20 to 0..100%
   return Math.max(5, Math.min(95, (diff + 20) / 40 * 100));
+}
+
+// --- DISTRICT TREND (multi-line per district) ---
+function computeDistrictQuarterly(txs) {
+  const data = {}; // { district: { quarter: [prices] } }
+  txs.forEach(t => {
+    const d = parseDate(t.date);
+    if (!d || !t.district) return;
+    const q = quarterLabel(d);
+    if (!data[t.district]) data[t.district] = {};
+    if (!data[t.district][q]) data[t.district][q] = [];
+    data[t.district][q].push(t.priceM2);
+  });
+
+  // Zbierz unikalne kwartały (posortowane)
+  const allQuarters = [...new Set(txs.map(t => {
+    const d = parseDate(t.date);
+    return d ? quarterLabel(d) : null;
+  }).filter(Boolean))].sort((a, b) => {
+    const [qa, ya] = [+a[1], +a.split(' ')[1]];
+    const [qb, yb] = [+b[1], +b.split(' ')[1]];
+    return (ya * 10 + qa) - (yb * 10 + qb);
+  });
+
+  // Tylko dzielnice z danymi w >= 2 kwartałach
+  const districts = Object.entries(data)
+    .filter(([_, qdata]) => Object.keys(qdata).length >= 2)
+    .map(([name, qdata]) => ({
+      name,
+      data: allQuarters.map(q => {
+        const prices = qdata[q];
+        return prices ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
+      }),
+    }))
+    .sort((a, b) => {
+      const avgA = a.data.filter(Boolean).reduce((s, v) => s + v, 0) / a.data.filter(Boolean).length;
+      const avgB = b.data.filter(Boolean).reduce((s, v) => s + v, 0) / b.data.filter(Boolean).length;
+      return avgB - avgA;
+    })
+    .slice(0, 6); // Max 6 linii
+
+  return { quarters: allQuarters, districts };
+}
+
+let districtTrendChart = null;
+
+function renderDistrictTrendChart(quarterlyData) {
+  const ctx = document.getElementById("district-trend-chart");
+  if (!ctx) return;
+  if (districtTrendChart) districtTrendChart.destroy();
+
+  const palette = [
+    "#818cf8", "#c084fc", "#f472b6", "#fb923c", "#34d399", "#fbbf24",
+  ];
+
+  districtTrendChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: quarterlyData.quarters,
+      datasets: quarterlyData.districts.map((d, i) => ({
+        label: d.name,
+        data: d.data,
+        borderColor: palette[i % palette.length],
+        backgroundColor: "transparent",
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: palette[i % palette.length],
+        tension: 0.3,
+        spanGaps: true,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: "rgba(255,255,255,0.5)",
+            font: { family: "'Inter'", size: 11 },
+            padding: 16,
+            usePointStyle: true,
+            pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(19,22,31,0.95)",
+          titleFont: { family: "'Inter'", size: 12, weight: '500' },
+          bodyFont: { family: "'Inter'", size: 13, weight: '600' },
+          padding: 14,
+          cornerRadius: 10,
+          borderColor: "rgba(99,102,241,0.2)",
+          borderWidth: 1,
+          callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.y)} PLN/m²` },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255,255,255,0.03)", drawBorder: false },
+          ticks: { color: "rgba(255,255,255,0.3)", font: { family: "'Inter'", size: 11 } },
+        },
+        y: {
+          grid: { color: "rgba(255,255,255,0.03)", drawBorder: false },
+          ticks: {
+            color: "rgba(255,255,255,0.3)",
+            font: { family: "'Inter'", size: 11 },
+            callback: v => fmt(v),
+          },
+        },
+      },
+    },
+  });
 }
 
 // --- REPORT BUILDER ---
 function buildReport(data, params) {
-  const { miasto, dzielnica, typ, metraz, cena } = params;
+  const { miasto, dzielnica, typ, metraz, cena, limit } = params;
   let txs = data.transactions || [];
 
   if (dzielnica) {
-    const filtered = filterByAddress(txs, dzielnica);
-    txs = filtered.length >= 5 ? filtered : txs;
+    const filtered = filterTransactions(txs, dzielnica);
+    txs = filtered.length >= 3 ? filtered : txs;
   }
 
   const stats = computeStats(txs);
   const quarterly = computeQuarterly(txs);
+  const districtStats = computeDistrictStats(txs);
+  const districtQuarterly = computeDistrictQuarterly(txs);
   const priceM2 = metraz > 0 ? Math.round(cena / metraz) : 0;
   const assessment = priceM2 > 0 ? assess(priceM2, stats) : null;
   const nbp = data.nbp;
@@ -223,20 +412,21 @@ function buildReport(data, params) {
     trendChange = +((last - first) / first * 100).toFixed(1);
   }
 
-  const tableTxs = txs.slice(0, 20);
+  const tableLimit = limit > 0 ? limit : txs.length;
+  const tableTxs = txs.slice(0, tableLimit);
 
   const container = document.getElementById("report-container");
   container.innerHTML = `
     <!-- Report Header -->
     <div class="report-hero reveal">
-      <div class="report-overline">Raport analizy porownawczej</div>
-      <div class="report-city">${miasto}${dzielnica ? ', ' + dzielnica : ''}</div>
+      <div class="report-overline">Raport cen transakcyjnych</div>
+      <div class="report-city">${miasto}${dzielnica ? ' · ' + dzielnica : ''}</div>
       <div class="report-pills">
         <span class="report-pill">Typ: <strong>${typ}</strong></span>
         <span class="report-pill">Transakcje: <strong>${txs.length}</strong></span>
         <span class="report-pill">Okres: <strong>${dateRange}</strong></span>
         <span class="report-pill">Wygenerowano: <strong>${dateStr}</strong></span>
-        ${nbp ? `<span class="report-pill">NBP ref: <strong>${fmt(nbp.secondary)} PLN/m2</strong> (${nbp.quarter})</span>` : ''}
+        ${nbp ? `<span class="report-pill">NBP ref: <strong>${fmt(nbp.secondary)} PLN/m²</strong> (${nbp.quarter})</span>` : ''}
       </div>
     </div>
 
@@ -244,7 +434,7 @@ function buildReport(data, params) {
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card primary reveal">
-        <div class="stat-label">Srednia cena / m2</div>
+        <div class="stat-label">Średnia cena / m²</div>
         <div class="stat-value"><span class="counter" data-target="${stats.avg}">0</span><span class="stat-unit">PLN</span></div>
         ${trendChange !== null ? `<div class="stat-badge ${trendChange >= 0 ? 'up' : 'down'}">${trendChange >= 0 ? '↑' : '↓'} ${Math.abs(trendChange)}%</div>` : ''}
       </div>
@@ -255,22 +445,22 @@ function buildReport(data, params) {
       <div class="stat-card reveal reveal-d2">
         <div class="stat-label">Transakcje</div>
         <div class="stat-value"><span class="counter" data-target="${stats.count}">0</span></div>
-        <div class="stat-label" style="margin-top:8px;margin-bottom:0">aktow notarialnych</div>
+        <div class="stat-label" style="margin-top:8px;margin-bottom:0">aktów notarialnych</div>
       </div>
       <div class="stat-card reveal reveal-d3">
         <div class="stat-label">Zakres cen</div>
         <div class="stat-value" style="font-size:20px">${fmt(stats.min)} – ${fmt(stats.max)}</div>
-        <div class="stat-label" style="margin-top:8px;margin-bottom:0">PLN / m2</div>
+        <div class="stat-label" style="margin-top:8px;margin-bottom:0">PLN / m²</div>
       </div>
     </div>
-    ` : '<div class="glass-card" style="padding:40px;text-align:center;color:var(--text-3);margin-bottom:20px">Brak wystarczajacych danych</div>'}
+    ` : '<div class="glass-card" style="padding:40px;text-align:center;color:var(--text-3);margin-bottom:20px">Brak wystarczających danych</div>'}
 
-    <!-- Chart -->
+    <!-- Trend Chart -->
     ${quarterly.length >= 2 ? `
     <div class="chart-section reveal reveal-d4">
       <div class="section-head">
         <div class="section-title">Trend cenowy</div>
-        <div class="section-tag">Kwartaly</div>
+        <div class="section-tag">Kwartały</div>
       </div>
       <div class="chart-wrap">
         <canvas id="trend-chart"></canvas>
@@ -278,23 +468,77 @@ function buildReport(data, params) {
     </div>
     ` : ''}
 
-    <!-- Table -->
-    <div class="table-section reveal reveal-d5">
+    <!-- District Comparison -->
+    ${districtStats.length >= 2 ? `
+    <div class="district-section reveal reveal-d5">
       <div class="section-head">
-        <div class="section-title">Transakcje z aktow notarialnych</div>
-        <div class="section-tag">${tableTxs.length} najnowszych</div>
+        <div class="section-title">Ranking dzielnic</div>
+        <div class="section-tag">${districtStats.length} dzielnic</div>
+      </div>
+      <div class="district-grid">
+        <div class="district-chart-wrap">
+          <canvas id="district-chart"></canvas>
+        </div>
+        <div class="district-table-wrap">
+          <table class="district-table">
+            <thead>
+              <tr>
+                <th>Dzielnica</th>
+                <th>Śr. PLN/m²</th>
+                <th>Mediana</th>
+                <th>Transakcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${districtStats.map((d, i) => `
+                <tr>
+                  <td class="cell-district">
+                    <span class="district-rank">${i + 1}</span>
+                    ${d.name}
+                  </td>
+                  <td class="cell-price">${fmt(d.avg)}</td>
+                  <td>${fmt(d.median)}</td>
+                  <td>${d.count}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- District Trend Chart -->
+    ${districtQuarterly.districts.length >= 2 ? `
+    <div class="chart-section reveal">
+      <div class="section-head">
+        <div class="section-title">Trend cenowy per dzielnica</div>
+        <div class="section-tag">Top ${districtQuarterly.districts.length} dzielnic</div>
+      </div>
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="district-trend-chart"></canvas>
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- Transactions Table -->
+    <div class="table-section reveal">
+      <div class="section-head">
+        <div class="section-title">Transakcje z aktów notarialnych</div>
+        <div class="section-tag">${tableTxs.length}${tableTxs.length < txs.length ? ' z ' + txs.length : ''}</div>
       </div>
       <table>
         <thead>
           <tr>
             <th>Data</th>
             <th>Adres</th>
-            <th>m2</th>
+            <th>Dzielnica</th>
+            <th>m²</th>
             <th>Pokoje</th>
-            <th>Pietro</th>
+            <th>Piętro</th>
             <th>Rynek</th>
             <th>Cena</th>
-            <th>PLN/m2</th>
+            <th>PLN/m²</th>
           </tr>
         </thead>
         <tbody>
@@ -302,9 +546,10 @@ function buildReport(data, params) {
             <tr>
               <td>${tx.date || '—'}</td>
               <td class="cell-addr">${tx.address || '—'}</td>
+              <td class="cell-district-tag">${tx.district || '—'}</td>
               <td>${tx.area}</td>
               <td>${tx.rooms || '—'}</td>
-              <td>${tx.floor !== null ? tx.floor : '—'}</td>
+              <td>${tx.floor !== null && tx.floor !== undefined ? tx.floor : '—'}</td>
               <td>${tx.market || '—'}</td>
               <td>${fmtPLN(tx.price)}</td>
               <td class="cell-price">${fmt(tx.priceM2)}</td>
@@ -320,7 +565,7 @@ function buildReport(data, params) {
       <div class="section-title">Ocena oferty</div>
       <div class="assess-grid">
         <div class="assess-metric">
-          <div class="assess-metric-label">Twoja cena / m2</div>
+          <div class="assess-metric-label">Twoja cena / m²</div>
           <div class="assess-metric-value">${fmt(priceM2)} PLN</div>
         </div>
         <div class="assess-metric">
@@ -329,11 +574,11 @@ function buildReport(data, params) {
         </div>
         <div class="assess-metric">
           <div class="assess-metric-label">Twoja oferta</div>
-          <div class="assess-metric-value" style="font-size:16px">${metraz} m2 · ${fmtPLN(cena)}</div>
+          <div class="assess-metric-value" style="font-size:16px">${metraz} m² · ${fmtPLN(cena)}</div>
         </div>
         <div class="assess-metric">
           <div class="assess-metric-label">Mediana okolicy</div>
-          <div class="assess-metric-value">${fmt(stats.median)} PLN/m2</div>
+          <div class="assess-metric-value">${fmt(stats.median)} PLN/m²</div>
         </div>
       </div>
       <div class="gauge-container">
@@ -351,8 +596,8 @@ function buildReport(data, params) {
 
     <!-- Source -->
     <div class="report-footer">
-      Zrodlo: Rejestr Cen Nieruchomosci (RCN) · geoportal.gov.pl · Dane z aktow notarialnych${nbp ? ` · Ceny referencyjne: NBP ${nbp.quarter}` : ''}<br>
-      Raport: ${dateStr} · RealTools AI
+      Źródło: Rejestr Cen Nieruchomości (RCN) · geoportal.gov.pl · Dane z aktów notarialnych${nbp ? ` · Ceny referencyjne: NBP ${nbp.quarter}` : ''}<br>
+      Raport: ${dateStr} · RCT — Rejestr Cen Transakcyjnych
     </div>
   `;
 
@@ -363,9 +608,15 @@ function buildReport(data, params) {
     });
   }, 200);
 
-  // Render chart
+  // Render charts
   if (quarterly.length >= 2) {
-    renderChart(quarterly);
+    renderTrendChart(quarterly);
+  }
+  if (districtStats.length >= 2) {
+    renderDistrictChart(districtStats);
+  }
+  if (districtQuarterly.districts.length >= 2) {
+    renderDistrictTrendChart(districtQuarterly);
   }
 }
 
@@ -377,7 +628,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const reportOutput = document.getElementById("report-output");
   const loadingSection = document.getElementById("loading-section");
 
-  // Check data freshness
   checkFreshness();
 
   generateBtn.addEventListener("click", async () => {
@@ -386,10 +636,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const typ = document.getElementById("rcn-typ").value;
     const metraz = parseFloat(document.getElementById("rcn-metraz").value) || 0;
     const cena = parseFloat(document.getElementById("rcn-cena").value) || 0;
+    const limit = parseInt(document.getElementById("rcn-limit").value) || 0;
 
     if (!miasto) { alert("Wybierz miasto"); return; }
 
-    // Show skeleton loading
     generateBtn.disabled = true;
     generateBtn.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg>
@@ -411,12 +661,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       loadingSection.classList.add("hidden");
-      buildReport(data, { miasto, dzielnica, typ, metraz, cena });
+      buildReport(data, { miasto, dzielnica, typ, metraz, cena, limit });
       reportOutput.classList.remove("hidden");
       window.scrollTo({ top: 0, behavior: "smooth" });
 
     } catch (err) {
-      alert("Blad: " + err.message);
+      alert("Błąd: " + err.message);
       loadingSection.classList.add("hidden");
       formSection.classList.remove("hidden");
       heroSection.classList.remove("hidden");
@@ -653,7 +903,7 @@ ${assessBlock}
   document.getElementById("print-btn-bottom").addEventListener("click", downloadPDF);
 });
 
-// Spin keyframe (for loading button)
+// Spin keyframe
 if (!document.getElementById('spin-style')) {
   const s = document.createElement('style');
   s.id = 'spin-style';

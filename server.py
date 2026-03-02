@@ -25,32 +25,28 @@ CACHE_MAX_AGE_DAYS = 7
 
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-# City center coordinates (WGS84)
+# City center coordinates (WGS84) — Trójmiasto + okolice
 CITY_CENTERS = {
-    "Gdańsk":    (54.372, 18.638),
-    "Sopot":     (54.441, 18.560),
-    "Gdynia":    (54.519, 18.531),
-    "Warszawa":  (52.230, 21.012),
-    "Kraków":    (50.065, 19.945),
-    "Wrocław":   (51.110, 17.038),
-    "Poznań":    (52.407, 16.930),
-    "Łódź":      (51.760, 19.456),
-    "Szczecin":  (53.429, 14.553),
-    "Lublin":    (51.246, 22.568),
+    "Gdańsk":           (54.372, 18.638),
+    "Sopot":            (54.441, 18.560),
+    "Gdynia":           (54.519, 18.531),
+    "Rumia":            (54.571, 18.394),
+    "Reda":             (54.607, 18.353),
+    "Wejherowo":        (54.605, 18.233),
+    "Pruszcz Gdański":  (54.262, 18.636),
+    "Elbląg":           (54.156, 19.404),
 }
 
 # NBP average prices per m2 (last known data — updated manually or via fetch_data.py)
 NBP_PRICES = {
-    "Gdańsk":    {"primary": 14200, "secondary": 13100, "quarter": "Q3 2025"},
-    "Sopot":     {"primary": 18500, "secondary": 16800, "quarter": "Q3 2025"},
-    "Gdynia":    {"primary": 13800, "secondary": 12200, "quarter": "Q3 2025"},
-    "Warszawa":  {"primary": 16300, "secondary": 16400, "quarter": "Q3 2025"},
-    "Kraków":    {"primary": 15100, "secondary": 14600, "quarter": "Q3 2025"},
-    "Wrocław":   {"primary": 13900, "secondary": 12800, "quarter": "Q3 2025"},
-    "Poznań":    {"primary": 12600, "secondary": 11200, "quarter": "Q3 2025"},
-    "Łódź":      {"primary": 10100, "secondary": 8200,  "quarter": "Q3 2025"},
-    "Szczecin":  {"primary": 11800, "secondary": 9900,  "quarter": "Q3 2025"},
-    "Lublin":    {"primary": 10500, "secondary": 9200,  "quarter": "Q3 2025"},
+    "Gdańsk":           {"primary": 14200, "secondary": 13100, "quarter": "Q3 2025"},
+    "Sopot":            {"primary": 18500, "secondary": 16800, "quarter": "Q3 2025"},
+    "Gdynia":           {"primary": 13800, "secondary": 12200, "quarter": "Q3 2025"},
+    "Rumia":            {"primary": 9500,  "secondary": 8200,  "quarter": "Q3 2025"},
+    "Reda":             {"primary": 9200,  "secondary": 7800,  "quarter": "Q3 2025"},
+    "Wejherowo":        {"primary": 8800,  "secondary": 7500,  "quarter": "Q3 2025"},
+    "Pruszcz Gdański":  {"primary": 10500, "secondary": 9000,  "quarter": "Q3 2025"},
+    "Elbląg":           {"primary": 7200,  "secondary": 5800,  "quarter": "Q3 2025"},
 }
 
 

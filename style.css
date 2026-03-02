@@ -262,28 +262,35 @@ header {
 }
 .logo { display: flex; align-items: center; gap: 10px; }
 .logo-mark {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   background: linear-gradient(135deg, var(--accent), #a78bfa);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
-  font-size: 14px;
   color: white;
-  letter-spacing: -1px;
 }
+.logo-mark svg { width: 18px; height: 18px; }
 .logo-text {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   color: var(--text);
+  background: linear-gradient(135deg, var(--accent-light), #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-.logo-text span {
-  color: var(--accent-light);
-  font-weight: 400;
-  margin-left: 2px;
+.logo-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-4);
+  letter-spacing: 0.3px;
+  display: none;
+}
+@media (min-width: 768px) {
+  .logo-sub { display: block; }
 }
 
 .header-meta {
@@ -839,6 +846,86 @@ td.cell-addr {
   line-height: 1.6;
 }
 
+/* --- DISTRICT SECTION --- */
+.district-section {
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.district-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 4px;
+}
+.district-chart-wrap {
+  position: relative;
+  min-height: 300px;
+}
+.district-table-wrap {
+  overflow-x: auto;
+}
+.district-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.district-table thead th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-4);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.district-table tbody td {
+  font-size: 13px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-2);
+}
+.district-table tbody tr:hover {
+  background: rgba(99,102,241,0.03);
+}
+.district-table tbody tr:last-child td { border-bottom: none; }
+
+.cell-district {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text);
+}
+.district-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cell-district-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-light);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .district-grid { grid-template-columns: 1fr; }
+  .district-chart-wrap { min-height: 250px; }
+}
+
 /* --- SOURCE FOOTER --- */
 .report-footer {
   text-align: center;
@@ -1276,10 +1363,26 @@ td.cell-addr {
     font-weight: 700;
   }
 
+  /* --- District section --- */
+  .district-section {
+    background: white !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px;
+    padding: 14px;
+    break-inside: avoid;
+  }
+  .district-grid { grid-template-columns: 1fr !important; }
+  .district-chart-wrap { min-height: 200px !important; }
+  .district-table tbody td { color: #444 !important; }
+  .district-rank { background: #e8e8ff !important; color: #4f46e5 !important; }
+  .cell-district-tag { color: #4f46e5 !important; }
+
   /* --- Animations off for print --- */
   .reveal, .reveal-d1, .reveal-d2, .reveal-d3, .reveal-d4, .reveal-d5 {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
+
+  @page { margin: 12mm 10mm; size: A4; }
 }

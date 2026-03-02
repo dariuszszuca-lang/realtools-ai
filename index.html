@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RealTools — Raport Cen Transakcyjnych</title>
+  <title>RCT — Rejestr Cen Transakcyjnych</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -20,15 +20,21 @@
     <header>
       <div class="header-inner">
         <div class="logo">
-          <div class="logo-mark">RT</div>
-          <div class="logo-text">RealTools <span>AI</span></div>
+          <div class="logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="logo-text">RCT</div>
+          <div class="logo-sub">Rejestr Cen Transakcyjnych</div>
         </div>
         <div class="header-meta">
           <div class="live-badge" id="liveBadge">
             <div class="live-dot"></div>
             <span id="liveText">Dane aktualne</span>
           </div>
-          <span class="header-source">Rejestr Cen Nieruchomosci</span>
+          <span class="header-source">dane z aktów notarialnych</span>
         </div>
       </div>
     </header>
@@ -37,9 +43,9 @@
 
       <!-- HERO -->
       <section id="hero-section" class="hero">
-        <div class="hero-tag">Dane z aktow notarialnych</div>
-        <h1>Raport cen<br><span class="gradient-text">transakcyjnych</span></h1>
-        <p class="subtitle">Analiza porownawcza oparta na danych z Rejestru Cen Nieruchomosci</p>
+        <div class="hero-tag">Rejestr Cen Nieruchomosci · RCN</div>
+        <h1>Ceny transakcyjne<br><span class="gradient-text">nieruchomości</span></h1>
+        <p class="subtitle">Prawdziwe ceny z aktów notarialnych — Trójmiasto i okolice</p>
       </section>
 
       <!-- FORM -->
@@ -55,28 +61,30 @@
               <label for="rcn-miasto">Miasto</label>
               <select id="rcn-miasto">
                 <option value="">Wybierz miasto</option>
-                <option value="Gdańsk">Gdansk</option>
-                <option value="Sopot">Sopot</option>
-                <option value="Gdynia">Gdynia</option>
-                <option value="Warszawa">Warszawa</option>
-                <option value="Kraków">Krakow</option>
-                <option value="Wrocław">Wroclaw</option>
-                <option value="Poznań">Poznan</option>
-                <option value="Łódź">Lodz</option>
-                <option value="Szczecin">Szczecin</option>
-                <option value="Lublin">Lublin</option>
+                <optgroup label="Trójmiasto">
+                  <option value="Gdańsk">Gdańsk</option>
+                  <option value="Sopot">Sopot</option>
+                  <option value="Gdynia">Gdynia</option>
+                </optgroup>
+                <optgroup label="Okolice">
+                  <option value="Rumia">Rumia</option>
+                  <option value="Reda">Reda</option>
+                  <option value="Wejherowo">Wejherowo</option>
+                  <option value="Pruszcz Gdański">Pruszcz Gdański</option>
+                  <option value="Elbląg">Elbląg</option>
+                </optgroup>
               </select>
             </div>
             <div class="field">
               <label for="rcn-dzielnica">Ulica / dzielnica</label>
-              <input type="text" id="rcn-dzielnica" placeholder="np. Polanki, Oliwa...">
+              <input type="text" id="rcn-dzielnica" placeholder="np. Wrzeszcz, Oliwa, Polanki...">
             </div>
             <div class="field">
               <label for="rcn-typ">Typ nieruchomosci</label>
               <select id="rcn-typ">
                 <option value="mieszkanie">Mieszkanie</option>
                 <option value="dom">Dom</option>
-                <option value="dzialka">Dzialka</option>
+                <option value="dzialka">Działka</option>
               </select>
             </div>
             <div class="field">
@@ -90,12 +98,21 @@
               </select>
             </div>
             <div class="field">
-              <label for="rcn-metraz">Metraz oferty (m2)</label>
+              <label for="rcn-metraz">Metraż oferty (m²)</label>
               <input type="number" id="rcn-metraz" placeholder="np. 68">
             </div>
             <div class="field">
               <label for="rcn-cena">Cena oferty (PLN)</label>
               <input type="number" id="rcn-cena" placeholder="np. 785000">
+            </div>
+            <div class="field">
+              <label for="rcn-limit">Pokaż transakcje</label>
+              <select id="rcn-limit">
+                <option value="20">20 najnowszych</option>
+                <option value="50">50 najnowszych</option>
+                <option value="100">100 najnowszych</option>
+                <option value="0">Wszystkie</option>
+              </select>
             </div>
           </div>
 
@@ -180,12 +197,13 @@
     </section>
 
     <footer class="app-footer">
-      <p>RealTools AI &mdash; dane z <a href="https://www.geoportal.gov.pl" target="_blank">Rejestru Cen Nieruchomosci</a></p>
+      <p>RCT — Rejestr Cen Transakcyjnych &mdash; dane z <a href="https://www.geoportal.gov.pl" target="_blank">Rejestru Cen Nieruchomosci</a></p>
       <p style="margin-top:4px;font-size:11px;color:var(--text-4)">Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463)</p>
     </footer>
 
   </div>
 
+  <script src="districts.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
