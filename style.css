@@ -241,6 +241,48 @@ body::before {
   border-top-color: #e8e8ee !important;
 }
 
+/* --- html2pdf specific --- */
+.pdf-render {
+  width: 1080px !important;
+  max-width: 1080px !important;
+  overflow: visible !important;
+}
+.pdf-render .stats-row {
+  display: grid !important;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr !important;
+  gap: 10px !important;
+}
+.pdf-render .district-grid {
+  grid-template-columns: 1fr !important;
+}
+.pdf-render .chart-wrap {
+  height: 260px !important;
+}
+.pdf-render .district-chart-wrap {
+  min-height: 220px !important;
+  height: 220px !important;
+}
+.pdf-render canvas {
+  max-width: 100% !important;
+}
+.pdf-render .chart-section,
+.pdf-render .table-section,
+.pdf-render .assess-card,
+.pdf-render .district-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.pdf-render .cell-district-tag {
+  color: #4f46e5 !important;
+}
+.pdf-render .district-rank {
+  background: #e8e8ff !important;
+  color: #4f46e5 !important;
+}
+.pdf-render .district-table tbody td {
+  color: #444 !important;
+}
+
 /* --- HEADER (sticky, glassmorphism) --- */
 header {
   position: sticky;

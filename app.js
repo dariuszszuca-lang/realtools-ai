@@ -420,6 +420,15 @@ function buildReport(data, params) {
 
   const container = document.getElementById("report-container");
   container.innerHTML = `
+    <!-- Print-only header (visible only in PDF) -->
+    <div class="print-header">
+      <div class="print-header__logo">
+        <div class="print-header__mark">RCT</div>
+        <div class="print-header__name">Rejestr Cen <span>Transakcyjnych</span></div>
+      </div>
+      <div class="print-header__meta">Raport: ${dateStr}<br>Rejestr Cen Nieruchomości</div>
+    </div>
+
     <!-- Report Header -->
     <div class="report-hero reveal">
       <div class="report-overline">Raport cen transakcyjnych</div>
@@ -602,6 +611,12 @@ function buildReport(data, params) {
       Źródło: Rejestr Cen Nieruchomości (RCN) · geoportal.gov.pl · Dane z aktów notarialnych${nbp ? ` · Ceny referencyjne: NBP ${nbp.quarter}` : ''}<br>
       Raport: ${dateStr} · RCT — Rejestr Cen Transakcyjnych
     </div>
+
+    <!-- Print-only footer (visible only in PDF) -->
+    <div class="print-footer">
+      <strong>RCT — Rejestr Cen Transakcyjnych</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomości (geoportal.gov.pl)<br>
+      Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.
+    </div>
   `;
 
   // Animate counters
@@ -690,216 +705,98 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — open new window with clean report HTML, auto-print to PDF
-  // No html2pdf.js — browser's native print handles PDF perfectly
+  // PDF — direct download using html2pdf.js (no new tab, no print dialog)
   function downloadPDF() {
+    if (typeof html2pdf === 'undefined') {
+      alert('Biblioteka PDF nie załadowała się. Odśwież stronę i spróbuj ponownie.');
+      return;
+    }
+
     const container = document.getElementById("report-container");
-    const today = new Date().toLocaleDateString('pl-PL');
+    if (!container) return;
 
-    // Extract data from DOM
+    // Filename from report content
     const city = container.querySelector('.report-city')?.textContent?.trim() || 'Raport';
-    const pills = Array.from(container.querySelectorAll('.report-pill')).map(p => p.textContent.trim());
+    const today = new Date().toISOString().slice(0, 10);
+    const safeName = city.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\s·]/g, '').replace(/[\s·]+/g, '_').replace(/_+$/, '');
+    const filename = `RCT_${safeName}_${today}.pdf`;
 
-    // Stats
-    const statCards = container.querySelectorAll('.stat-card');
-    const stats = [];
-    statCards.forEach(card => {
-      const label = card.querySelector('.stat-label')?.textContent?.trim() || '';
-      const counter = card.querySelector('.counter');
-      const valEl = card.querySelector('.stat-value');
-      let value = '';
-      if (counter) {
-        value = fmt(parseInt(counter.dataset.target));
-        const unit = card.querySelector('.stat-unit');
-        if (unit) value += ' ' + unit.textContent.trim();
-      } else if (valEl) {
-        value = valEl.textContent.trim();
-      }
-      const badge = card.querySelector('.stat-badge');
-      const badgeText = badge ? badge.textContent.trim() : '';
-      const isPrimary = card.classList.contains('primary');
-      const labels = card.querySelectorAll('.stat-label');
-      const subLabel = labels.length > 1 ? labels[labels.length - 1].textContent.trim() : '';
-      stats.push({ label, value, badgeText, isPrimary, subLabel });
+    // Loading state on buttons
+    const btns = [document.getElementById('print-btn'), document.getElementById('print-btn-bottom')].filter(Boolean);
+    const originalHTML = btns[0]?.innerHTML;
+    btns.forEach(btn => {
+      btn.disabled = true;
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg>
+        Generuję PDF...
+      `;
     });
 
-    // Chart as base64 image
-    let chartImg = '';
-    const canvas = container.querySelector('#trend-chart');
-    if (canvas) {
-      try { chartImg = canvas.toDataURL('image/png', 1.0); } catch(e) {}
-    }
-
-    // Table data
-    const tableHeaders = [];
-    container.querySelectorAll('thead th').forEach(th => tableHeaders.push(th.textContent.trim()));
-    const tableRows = [];
-    container.querySelectorAll('tbody tr').forEach(tr => {
-      const cells = Array.from(tr.querySelectorAll('td')).map(td => ({
-        text: td.textContent.trim(),
-        isAddr: td.classList.contains('cell-addr'),
-        isPrice: td.classList.contains('cell-price'),
-      }));
-      tableRows.push(cells);
+    // Finalize counter values (stop any animation)
+    container.querySelectorAll('.counter').forEach(el => {
+      el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    // Assessment
-    const assessCard = container.querySelector('.assess-card');
-    let assessBlock = '';
-    if (assessCard) {
-      const metrics = [];
-      assessCard.querySelectorAll('.assess-metric').forEach(m => {
-        metrics.push({
-          lbl: m.querySelector('.assess-metric-label')?.textContent?.trim() || '',
-          val: m.querySelector('.assess-metric-value')?.textContent?.trim() || '',
-          color: m.querySelector('.assess-metric-value')?.style?.color || '#1e1e2e',
-        });
+    // Switch to light theme for PDF
+    container.classList.add('pdf-render');
+
+    // Convert chart canvases to static images (more reliable rendering)
+    const canvasBackups = [];
+    container.querySelectorAll('canvas').forEach(canvas => {
+      try {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png', 1.0);
+        img.style.width = '100%';
+        img.style.height = (canvas.offsetHeight || 280) + 'px';
+        img.style.display = 'block';
+        canvas.parentElement.insertBefore(img, canvas);
+        canvas.style.display = 'none';
+        canvasBackups.push({ canvas, img });
+      } catch (e) { /* tainted canvas — html2canvas will handle it */ }
+    });
+
+    // html2pdf config
+    const opt = {
+      margin:       [12, 14, 16, 14],
+      filename:     filename,
+      image:        { type: 'jpeg', quality: 0.95 },
+      html2canvas:  {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        windowWidth: 1080,
+      },
+      jsPDF:        {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+      },
+      pagebreak:    {
+        mode: ['avoid-all', 'css', 'legacy'],
+        avoid: ['.stat-card', '.assess-card', '.chart-section', '.district-section', '.report-hero'],
+      },
+    };
+
+    function restore() {
+      container.classList.remove('pdf-render');
+      canvasBackups.forEach(({ canvas, img }) => {
+        canvas.style.display = '';
+        if (img.parentElement) img.parentElement.removeChild(img);
       });
-      const verdict = assessCard.querySelector('.gauge-verdict')?.textContent?.trim() || '';
-      const detail = assessCard.querySelector('.gauge-detail')?.textContent?.trim() || '';
-      const verdictColor = assessCard.querySelector('.gauge-verdict')?.style?.color || '#4f46e5';
-
-      assessBlock = `
-        <div class="section assess">
-          <h3 style="color:#4f46e5">Ocena oferty</h3>
-          <table class="metrics"><tr>
-            ${metrics.map(m => `<td><div class="mlabel">${m.lbl}</div><div class="mval" style="color:${m.color}">${m.val}</div></td>`).join('')}
-          </tr></table>
-          <div class="verdict-box">
-            <div class="verdict" style="color:${verdictColor}">${verdict}</div>
-            <div class="vdetail">${detail}</div>
-          </div>
-        </div>`;
+      btns.forEach(btn => {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      });
     }
 
-    const srcFooter = container.querySelector('.report-footer')?.textContent?.trim() || '';
-
-    // Build complete HTML document for print window
-    const htmlDoc = `<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<title>RealTools — ${city}</title>
-<style>
-  @page { size: A4; margin: 14mm 16mm 18mm 16mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color: #1e1e2e; font-size: 10pt; line-height: 1.5; background: #fff; }
-
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 18px; }
-  .header-logo { display: flex; align-items: center; gap: 8px; }
-  .header-mark { width: 28px; height: 28px; background: #4f46e5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 11px; }
-  .header-name { font-size: 15px; font-weight: 700; }
-  .header-name span { color: #4f46e5; font-weight: 400; }
-  .header-meta { text-align: right; font-size: 8pt; color: #94a3b8; }
-
-  .title-box { background: #f0f0ff; border: 1px solid #c7c5f5; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; }
-  .title-box .overline { font-size: 7.5pt; font-weight: 700; letter-spacing: 3px; color: #4f46e5; text-transform: uppercase; margin-bottom: 4px; }
-  .title-box .city { font-size: 22pt; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
-  .pill { display: inline-block; font-size: 8pt; color: #64748b; background: #fff; border: 1px solid #e2e2ee; padding: 2px 8px; border-radius: 4px; margin-right: 4px; margin-bottom: 4px; }
-
-  .stats { display: flex; gap: 10px; margin-bottom: 16px; }
-  .stat { flex: 1; background: #fafafa; border: 1px solid #e8e8ee; border-radius: 8px; padding: 14px 16px; }
-  .stat.primary { background: #f0f0ff; border-color: #c7c5f5; flex: 1.5; }
-  .stat .slabel { font-size: 7pt; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-  .stat .sval { font-size: 18pt; font-weight: 800; line-height: 1; }
-  .stat.primary .sval { font-size: 24pt; color: #4f46e5; }
-  .stat .sbadge { font-size: 8pt; font-weight: 700; margin-top: 6px; }
-  .stat .ssub { font-size: 7pt; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-top: 6px; }
-
-  .section { background: #fafafa; border: 1px solid #e8e8ee; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; page-break-inside: avoid; }
-  .section h3 { font-size: 11pt; font-weight: 700; margin-bottom: 4px; }
-  .section .stag { font-size: 7pt; color: #94a3b8; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; float: right; margin-top: 4px; }
-  .section.assess { background: #f5f3ff; border-color: #c7c5f5; }
-  .section img { width: 100%; margin-top: 10px; }
-
-  table.data { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  table.data th { font-size: 7pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #94a3b8; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e8e8ee; }
-  table.data td { font-size: 8.5pt; padding: 6px 8px; border-bottom: 1px solid #f1f1f5; color: #475569; }
-  table.data td.addr { color: #1e1e2e; font-weight: 500; }
-  table.data td.price { color: #4f46e5; font-weight: 700; white-space: nowrap; }
-
-  table.metrics { width: 100%; border-collapse: separate; border-spacing: 8px; margin-bottom: 12px; }
-  table.metrics td { background: #fff; border: 1px solid #e2e2ee; border-radius: 6px; padding: 10px; text-align: center; }
-  .mlabel { font-size: 7pt; color: #94a3b8; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
-  .mval { font-size: 14pt; font-weight: 700; }
-  .verdict-box { background: #fff; border: 1px solid #e2e2ee; border-left: 3px solid #4f46e5; border-radius: 6px; padding: 12px; }
-  .verdict { font-size: 10pt; font-weight: 700; margin-bottom: 2px; }
-  .vdetail { font-size: 9pt; color: #64748b; }
-
-  .src { text-align: center; font-size: 7.5pt; color: #94a3b8; border-top: 1px solid #e8e8ee; padding-top: 10px; margin-top: 10px; }
-  .foot { text-align: center; font-size: 7.5pt; color: #94a3b8; border-top: 2px solid #4f46e5; padding-top: 10px; margin-top: 10px; }
-  .foot strong { color: #4f46e5; }
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="header-logo">
-    <div class="header-mark">RT</div>
-    <div class="header-name">RealTools <span>AI</span></div>
-  </div>
-  <div class="header-meta">Raport: ${today}<br>Rejestr Cen Nieruchomosci</div>
-</div>
-
-<div class="title-box">
-  <div class="overline">Raport analizy porownawczej</div>
-  <div class="city">${city}</div>
-  ${pills.map(p => `<span class="pill">${p}</span>`).join('')}
-</div>
-
-${stats.length ? `
-<div class="stats">
-  ${stats.map(s => `
-    <div class="stat${s.isPrimary ? ' primary' : ''}">
-      <div class="slabel">${s.label}</div>
-      <div class="sval">${s.value}</div>
-      ${s.badgeText ? `<div class="sbadge" style="color:${s.badgeText.includes('\u2191') ? '#16a34a' : '#dc2626'}">${s.badgeText}</div>` : ''}
-      ${s.subLabel ? `<div class="ssub">${s.subLabel}</div>` : ''}
-    </div>
-  `).join('')}
-</div>` : ''}
-
-${chartImg ? `
-<div class="section">
-  <span class="stag">Kwartaly</span>
-  <h3>Trend cenowy</h3>
-  <img src="${chartImg}" />
-</div>` : ''}
-
-${tableRows.length ? `
-<div class="section" style="background:#fff">
-  <span class="stag">${tableRows.length} najnowszych</span>
-  <h3>Transakcje z aktow notarialnych</h3>
-  <table class="data">
-    <thead><tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>${tableRows.map(row => `<tr>${row.map((c, i) => {
-      let cls = '';
-      if (c.isAddr) cls = ' class="addr"';
-      if (c.isPrice) cls = ' class="price"';
-      if (!cls && i === 1) cls = ' class="addr"';
-      if (!cls && i === row.length - 1) cls = ' class="price"';
-      return `<td${cls}>${c.text}</td>`;
-    }).join('')}</tr>`).join('')}</tbody>
-  </table>
-</div>` : ''}
-
-${assessBlock}
-
-<div class="src">${srcFooter}</div>
-<div class="foot"><strong>RealTools AI</strong> — Analiza oparta na danych z Rejestru Cen Nieruchomosci (geoportal.gov.pl)<br>Dane publiczne od 01.02.2025 r. (Dz.U. 2023 poz. 1463). Raport ma charakter informacyjny.</div>
-
-<script>window.onload = function() { window.print(); }<\/script>
-</body>
-</html>`;
-
-    // Open new window with clean report — browser print dialog → Save as PDF
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(htmlDoc);
-      printWin.document.close();
-    } else {
-      alert('Odblokuj wyskakujace okna (popup) aby pobrac PDF');
-    }
+    html2pdf().set(opt).from(container).save()
+      .then(() => restore())
+      .catch((err) => {
+        console.error('PDF error:', err);
+        restore();
+        alert('Nie udało się wygenerować PDF. Spróbuj ponownie.');
+      });
   }
 
   document.getElementById("print-btn").addEventListener("click", downloadPDF);
