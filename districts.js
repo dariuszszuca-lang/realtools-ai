@@ -43,12 +43,12 @@ const DISTRICT_MAP = {
     "marsz. Ferdynanda Focha": "Wrzeszcz", "Władysława Broniewskiego": "Wrzeszcz",
     "ks. Jerzego Popiełuszki": "Wrzeszcz", "Tadeusza Kościuszki": "Wrzeszcz",
     "Jana Sobieskiego": "Wrzeszcz", "Konstantego Ildefonsa Gałczyńskiego": "Wrzeszcz",
-    "Aleja Grunwaldzka": "Wrzeszcz", "Aleja Wojska Polskiego": "Wrzeszcz",
-    "Władysława Cieszyńskiego": "Wrzeszcz", "Powstańców Warszawskich": "Wrzeszcz",
-    "Płowce": "Wrzeszcz", "Śląska": "Wrzeszcz",
+    "Aleja Grunwaldzka": "Wrzeszcz",
+    "Władysława Cieszyńskiego": "Wrzeszcz",
+    "Żywiecka": "Wrzeszcz", "Grażyny": "Wrzeszcz",
     "Klonowa": "Wrzeszcz", "Miszewskiego": "Wrzeszcz",
     "Waryńskiego": "Wrzeszcz", "Legionów": "Wrzeszcz",
-    "Kopernika": "Wrzeszcz", "Uphagena": "Wrzeszcz",
+    "Uphagena": "Wrzeszcz",
     "Sobótki": "Wrzeszcz", "Kołłątaja": "Wrzeszcz",
     "Jaśkowa Dolina": "Wrzeszcz", "Konopnickiej": "Wrzeszcz",
     "Dmowskiego": "Wrzeszcz", "Trawki": "Wrzeszcz",
@@ -67,14 +67,14 @@ const DISTRICT_MAP = {
     "Buraczana": "Oliwa", "Olgierda": "Oliwa",
 
     // --- Przymorze ---
-    "Jagiellońska": "Przymorze",
+    "Jagiellońska": "Przymorze", "Śląska": "Przymorze",
     "Obrońców Wybrzeża": "Przymorze", "Prezydenta Lecha Kaczyńskiego": "Przymorze",
     "Kołobrzeska": "Przymorze", "Aleja Rzeczypospolitej": "Przymorze",
     "Warneńska": "Przymorze", "Magellana": "Przymorze",
     "Chłopska": "Przymorze", "Dąbrowszczaków": "Przymorze",
 
     // --- Zaspa ---
-    "Czarny Dwór": "Zaspa", "Pilotów": "Zaspa", "Dywizjonu": "Zaspa",
+    "Pilotów": "Zaspa", "Dywizjonu": "Zaspa", "Czarny Dwór": "Przymorze",
     "Aleja Jana Pawła II": "Zaspa", "Startowa": "Zaspa",
     "Żwirki i Wigury": "Zaspa", "Lecha Wałęsy": "Zaspa", "Hynka": "Zaspa",
     "Janusza Meissnera": "Zaspa",
@@ -86,12 +86,16 @@ const DISTRICT_MAP = {
     "Nadmorski Dwór": "Jelitkowo", "Jelitkowska": "Jelitkowo",
     "Brzeźnieńska": "Brzeźno",
 
-    // --- Morena ---
-    "Morenowe Wzgórze": "Morena", "Franciszka Rakoczego": "Morena",
-    "Macieja Kamieńskiego": "Morena", "Żywiecka": "Morena",
-    "Zakopiańska": "Morena", "Wawelska": "Morena",
-    "Schuberta": "Morena", "Beethovena": "Morena",
-    "Chopina": "Morena", "Grażyny": "Morena",
+    // --- Piecki-Migowo ---
+    "Morenowe Wzgórze": "Piecki-Migowo", "Franciszka Rakoczego": "Piecki-Migowo",
+    "Myśliwska": "Piecki-Migowo",
+
+    // --- Strzyża ---
+    "Chopina": "Strzyża", "Aleja Wojska Polskiego": "Strzyża",
+
+    // --- Suchanino ---
+    "Schuberta": "Suchanino", "Beethovena": "Suchanino",
+    "Macieja Kamieńskiego": "Suchanino",
 
     // --- Chełm ---
     "Głęboka": "Chełm", "Koralowa": "Chełm", "Rogalińska": "Chełm",
@@ -99,10 +103,10 @@ const DISTRICT_MAP = {
     "Olsztyńska": "Chełm", "Toruńska": "Chełm", "Zielony Stok": "Chełm",
     "Słoneczna Dolina": "Chełm", "Cienista": "Chełm", "Witosa": "Chełm",
     "Platynowa": "Chełm", "Srebrna": "Chełm", "Złota": "Chełm",
-    "Diamentowa": "Chełm", "Jaskółcza": "Chełm",
+    "Diamentowa": "Chełm", "Jaskółcza": "Chełm", "Wawelska": "Chełm",
 
     // --- Jasień ---
-    "Jabłoniowa": "Jasień", "Myśliwska": "Jasień",
+    "Jabłoniowa": "Jasień",
     "Lawendowe Wzgórze": "Jasień", "Stanisława Lema": "Jasień",
     "Krzysztofa Kamila Baczyńskiego": "Jasień", "Zbigniewa Burzyńskiego": "Jasień",
     "Morelowa": "Jasień", "Turzycowa": "Jasień",
@@ -115,7 +119,7 @@ const DISTRICT_MAP = {
     "Niepołomicka": "Łostowice", "Świętokrzyska": "Łostowice",
 
     // --- Siedlce ---
-    "Kartuska": "Siedlce", "Anny Jagiellonki": "Siedlce",
+    "Kartuska": "Siedlce", "Anny Jagiellonki": "Siedlce", "Zakopiańska": "Siedlce",
     "Franciszka Bohomolca": "Siedlce", "Grudziądzka": "Siedlce",
     "Orańska": "Siedlce", "Ptasia": "Siedlce", "Sadowa": "Siedlce",
     "Starowiejska": "Siedlce", "Zamiejska": "Siedlce",
@@ -128,6 +132,8 @@ const DISTRICT_MAP = {
     // --- Aniołki ---
     "Królewskie Wzgórze": "Aniołki", "Tytusa Chałubińskiego": "Aniołki",
     "prof. Stefana Hausbrandta": "Aniołki", "Śniadeckich": "Aniołki",
+    "Płowce": "Aniołki", "Kopernika": "Aniołki",
+    "Powstańców Warszawskich": "Aniołki",
 
     // --- Suchanino ---
     "Spadzista": "Suchanino",
