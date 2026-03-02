@@ -383,15 +383,18 @@ function buildReport(data, params) {
   const { miasto, dzielnica, typ, metraz, cena, limit } = params;
   let txs = data.transactions || [];
 
+  // District stats computed on ALL transactions (for ranking/comparison)
+  const districtStats = computeDistrictStats(txs);
+  const districtQuarterly = computeDistrictQuarterly(txs);
+
+  // Filter by district/street if specified
   if (dzielnica) {
     const filtered = filterTransactions(txs, dzielnica);
-    txs = filtered.length >= 3 ? filtered : txs;
+    if (filtered.length > 0) txs = filtered;
   }
 
   const stats = computeStats(txs);
   const quarterly = computeQuarterly(txs);
-  const districtStats = computeDistrictStats(txs);
-  const districtQuarterly = computeDistrictQuarterly(txs);
   const priceM2 = metraz > 0 ? Math.round(cena / metraz) : 0;
   const assessment = priceM2 > 0 ? assess(priceM2, stats) : null;
   const nbp = data.nbp;
