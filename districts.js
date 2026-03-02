@@ -31,7 +31,7 @@ const DISTRICT_MAP = {
     "Warzywnicza": "Śródmieście",
 
     // --- Wrzeszcz ---
-    "Do Studzienki": "Wrzeszcz", "Jagiellońska": "Wrzeszcz",
+    "Do Studzienki": "Wrzeszcz",
     "Partyzantów": "Wrzeszcz", "Jana Pestalozziego": "Wrzeszcz",
     "Juliusza Słowackiego": "Wrzeszcz", "Stefana Batorego": "Wrzeszcz",
     "Joachima Lelewela": "Wrzeszcz", "Jana Kochanowskiego": "Wrzeszcz",
@@ -47,7 +47,7 @@ const DISTRICT_MAP = {
     "Władysława Cieszyńskiego": "Wrzeszcz", "Powstańców Warszawskich": "Wrzeszcz",
     "Płowce": "Wrzeszcz", "Śląska": "Wrzeszcz",
     "Klonowa": "Wrzeszcz", "Miszewskiego": "Wrzeszcz",
-    "Waryńskiego": "Wrzeszcz", "Legionów": "Wrzeszcz",
+    "Waryńskiego": "Wrzeszcz",
     "Kopernika": "Wrzeszcz", "Uphagena": "Wrzeszcz",
     "Sobótki": "Wrzeszcz", "Kołłątaja": "Wrzeszcz",
     "Jaśkowa Dolina": "Wrzeszcz", "Konopnickiej": "Wrzeszcz",
@@ -67,6 +67,7 @@ const DISTRICT_MAP = {
     "Buraczana": "Oliwa", "Olgierda": "Oliwa",
 
     // --- Przymorze ---
+    "Jagiellońska": "Przymorze",
     "Obrońców Wybrzeża": "Przymorze", "Prezydenta Lecha Kaczyńskiego": "Przymorze",
     "Kołobrzeska": "Przymorze", "Aleja Rzeczypospolitej": "Przymorze",
     "Warneńska": "Przymorze", "Magellana": "Przymorze",
@@ -134,7 +135,7 @@ const DISTRICT_MAP = {
     // --- Letnica / Nowy Port ---
     "Letnicka": "Letnica", "Marynarki Polskiej": "Letnica",
     "Konrada Korzeniowskiego": "Nowy Port", "Oliwska": "Nowy Port",
-    "Wyzwolenia": "Nowy Port",
+    "Wyzwolenia": "Nowy Port", "Legionów": "Nowy Port",
 
     // --- Stogi ---
     "Skiby": "Stogi",
