@@ -878,29 +878,42 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // Create hidden container, render, download, cleanup
+    // Create offscreen container — must be in-flow for html2canvas
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:#fff;z-index:-1;';
+    wrapper.id = 'pdf-wrapper';
+    wrapper.style.cssText = 'position:absolute;top:0;left:0;width:700px;background:#fff;z-index:99999;opacity:0;pointer-events:none;';
     wrapper.innerHTML = pdfHTML;
     document.body.appendChild(wrapper);
 
-    const opt = {
-      margin: [10, 10, 14, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.92 },
-      html2canvas: { scale: 2, useCORS: true, logging: false, width: 700 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'], avoid: ['.section', '.assess'] },
-    };
+    // Wait for images to load before rendering
+    const images = wrapper.querySelectorAll('img');
+    const imagePromises = Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+    });
 
-    html2pdf().set(opt).from(wrapper.firstElementChild).save()
+    Promise.all(imagePromises).then(() => {
+      // Make visible for html2canvas (it needs rendered pixels)
+      wrapper.style.opacity = '1';
+
+      const opt = {
+        margin: [10, 10, 14, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0, windowWidth: 700 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['.section', '.assess'] },
+      };
+
+      return html2pdf().set(opt).from(wrapper.firstElementChild).save();
+    })
       .then(() => {
         document.body.removeChild(wrapper);
         btns.forEach(btn => { btn.disabled = false; btn.innerHTML = originalHTML; });
       })
       .catch((err) => {
         console.error('PDF error:', err);
-        document.body.removeChild(wrapper);
+        if (wrapper.parentElement) document.body.removeChild(wrapper);
         btns.forEach(btn => { btn.disabled = false; btn.innerHTML = originalHTML; });
         alert('Nie udało się wygenerować PDF. Spróbuj ponownie.');
       });
