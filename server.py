@@ -97,6 +97,7 @@ CITY_CENTERS = {
     "Wejherowo":        (54.605, 18.233),
     "Pruszcz Gdański":  (54.262, 18.636),
     "Elbląg":           (54.156, 19.404),
+    "Malbork":          (54.036, 19.028),
 }
 
 # NBP average prices per m2 (last known data — updated manually or via fetch_data.py)
@@ -109,6 +110,7 @@ NBP_PRICES = {
     "Wejherowo":        {"primary": 8800,  "secondary": 7500,  "quarter": "Q3 2025"},
     "Pruszcz Gdański":  {"primary": 10500, "secondary": 9000,  "quarter": "Q3 2025"},
     "Elbląg":           {"primary": 7200,  "secondary": 5800,  "quarter": "Q3 2025"},
+    "Malbork":          {"primary": 6500,  "secondary": 5200,  "quarter": "Q3 2025"},
 }
 
 
