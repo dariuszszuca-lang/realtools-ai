@@ -1145,11 +1145,29 @@ td.cell-addr {
   .form-grid { grid-template-columns: 1fr; }
   .stats-row { grid-template-columns: 1fr; }
   .stat-card.primary .stat-value { font-size: 34px; }
-  .glass-card { padding: 20px; }
+  .glass-card { padding: 20px; overflow: visible; }
   .assess-grid { grid-template-columns: 1fr; }
   .gauge-container { flex-direction: column; }
   .gauge-text { min-width: 0; }
-  .report-hero { padding: 24px; }
+  .report-hero { padding: 24px; overflow: visible; }
+  .report-pills { flex-direction: column; gap: 6px; }
+  .report-pill { font-size: 11px; }
+  .report-city { font-size: 24px; }
+  .stat-value { font-size: 24px; }
+  .stat-card { overflow: visible; }
+  .table-section { padding: 16px 10px; overflow-x: auto; }
+  .table-section table { min-width: 700px; }
+  .district-section { padding: 16px 10px; overflow-x: auto; }
+  .district-table { min-width: 500px; }
+  .chart-section { padding: 16px 10px; }
+  .chart-wrap { height: 220px; }
+  .assess-card { padding: 20px 16px; }
+  .assess-metric-value { font-size: 16px; }
+  .container { padding: 0 12px 60px; }
+  .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .output-actions { flex-direction: column; gap: 8px; width: 100%; }
+  .output-actions .btn-outline,
+  .output-actions .btn-ghost { width: 100%; justify-content: center; }
 }
 
 /* --- PRINT (Professional PDF Report) --- */
