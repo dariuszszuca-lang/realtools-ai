@@ -104,8 +104,8 @@ function renderTrendChart(data) {
   if (trendChart) trendChart.destroy();
 
   const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280);
-  gradient.addColorStop(0, 'rgba(99,102,241,0.15)');
-  gradient.addColorStop(1, 'rgba(99,102,241,0)');
+  gradient.addColorStop(0, 'rgba(13,148,136,0.15)');
+  gradient.addColorStop(1, 'rgba(13,148,136,0)');
 
   trendChart = new Chart(ctx, {
     type: "line",
@@ -114,11 +114,11 @@ function renderTrendChart(data) {
       datasets: [{
         label: "Średnia PLN/m²",
         data: data.map(q => q.avg),
-        borderColor: "#818cf8",
+        borderColor: "#14b8a6",
         backgroundColor: gradient,
         borderWidth: 2.5,
-        pointBackgroundColor: "#818cf8",
-        pointBorderColor: "#0c0e14",
+        pointBackgroundColor: "#14b8a6",
+        pointBorderColor: "#0f1115",
         pointBorderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
@@ -137,7 +137,7 @@ function renderTrendChart(data) {
           bodyFont: { family: "'Inter'", size: 14, weight: '700' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(99,102,241,0.2)",
+          borderColor: "rgba(13,148,136,0.2)",
           borderWidth: 1,
           displayColors: false,
           callbacks: { label: (c) => fmt(c.parsed.y) + " PLN/m²" },
@@ -168,7 +168,7 @@ function renderDistrictChart(districtStats) {
 
   const top = districtStats.slice(0, 12); // Max 12 dzielnic
   const colors = top.map((_, i) => {
-    const hue = 240 + (i * 15); // Odcienie fioletu/indigo
+    const hue = 168 + (i * 12); // Odcienie teal → cyan → blue
     return `hsla(${hue % 360}, 70%, 65%, 0.8)`;
   });
 
@@ -198,7 +198,7 @@ function renderDistrictChart(districtStats) {
           bodyFont: { family: "'Inter'", size: 14, weight: '700' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(99,102,241,0.2)",
+          borderColor: "rgba(13,148,136,0.2)",
           borderWidth: 1,
           displayColors: false,
           callbacks: {
@@ -237,7 +237,7 @@ function assess(userPM2, stats) {
   } else if (diff < -3) {
     verdict = "Lekko poniżej"; detail = `Cena ${Math.abs(diff)}% poniżej mediany. Konkurencyjna oferta.`; color = "#4ade80";
   } else if (diff <= 3) {
-    verdict = "Cena rynkowa"; detail = `Cena zgodna z medianą (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#818cf8";
+    verdict = "Cena rynkowa"; detail = `Cena zgodna z medianą (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#14b8a6";
   } else if (diff <= 8) {
     verdict = "Lekko powyżej"; detail = `Cena +${diff}% powyżej mediany. Uzasadnione przy wyższym standardzie.`; color = "#f59e0b";
   } else {
@@ -314,7 +314,7 @@ function renderDistrictTrendChart(quarterlyData) {
   if (districtTrendChart) districtTrendChart.destroy();
 
   const palette = [
-    "#818cf8", "#c084fc", "#f472b6", "#fb923c", "#34d399", "#fbbf24",
+    "#14b8a6", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899",
   ];
 
   districtTrendChart = new Chart(ctx, {
@@ -355,7 +355,7 @@ function renderDistrictTrendChart(quarterlyData) {
           bodyFont: { family: "'Inter'", size: 13, weight: '600' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(99,102,241,0.2)",
+          borderColor: "rgba(13,148,136,0.2)",
           borderWidth: 1,
           callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.y)} PLN/m²` },
         },
