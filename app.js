@@ -705,115 +705,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — clone to offscreen div, render with light theme
+  // PDF — use browser's native print (reliable, uses @media print CSS)
   function downloadPDF() {
     const container = document.getElementById("report-container");
     if (!container) return;
 
-    // --- File name ---
-    const city = container.querySelector('.report-city')?.textContent?.trim() || 'Raport';
-    const safeName = city.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\s·]/g, '').replace(/[\s·]+/g, '_').replace(/_+$/, '');
-    const filename = `RCT_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
-
-    // --- Loading state ---
-    const btns = [document.getElementById('print-btn'), document.getElementById('print-btn-bottom')].filter(Boolean);
-    const origBtnHTML = btns[0]?.innerHTML;
-    btns.forEach(b => {
-      b.disabled = true;
-      b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF…';
-    });
-
-    function restoreButtons() {
-      btns.forEach(b => { b.disabled = false; b.innerHTML = origBtnHTML; });
-    }
-
-    // --- Check html2pdf availability ---
-    if (typeof html2pdf === 'undefined') {
-      restoreButtons();
-      if (confirm('Biblioteka PDF nie załadowała się.\nOtworzyć okno drukowania? (Zapisz jako PDF)')) {
-        window.print();
-      }
-      return;
-    }
-
-    // 1) Fix counter values in original (they animate from 0)
+    // Fix counter values (they animate from 0, print needs final values)
     container.querySelectorAll('.counter').forEach(el => {
       el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    // 2) Clone container for clean offscreen rendering
-    const clone = container.cloneNode(true);
-    clone.classList.add('pdf-render');
-
-    // 3) Replace Chart.js <canvas> with static <img> in CLONE
-    //    Read from original canvases (which have chart data), write to clone
-    const origCanvases = Array.from(container.querySelectorAll('canvas'));
-    const cloneCanvases = Array.from(clone.querySelectorAll('canvas'));
-    origCanvases.forEach((cvs, i) => {
-      if (!cloneCanvases[i]) return;
-      try {
-        const url = cvs.toDataURL('image/png', 1.0);
-        const img = document.createElement('img');
-        img.src = url;
-        // Preserve exact pixel dimensions from original canvas
-        const w = cvs.offsetWidth || cvs.width;
-        const h = cvs.offsetHeight || cvs.height;
-        img.style.cssText = `width:${w}px;height:${h}px;max-width:100%;display:block;`;
-        cloneCanvases[i].parentNode.replaceChild(img, cloneCanvases[i]);
-      } catch (e) {
-        // Tainted canvas — remove it from clone (better than broken render)
-        cloneCanvases[i].parentNode.removeChild(cloneCanvases[i]);
-      }
-    });
-
-    // 4) Mount clone offscreen (html2canvas needs it in DOM)
-    const offscreen = document.createElement('div');
-    offscreen.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;z-index:-9999;background:#fff;overflow:visible;';
-    offscreen.appendChild(clone);
-    document.body.appendChild(offscreen);
-
-    // 5) Wait for repaint + images to decode
-    setTimeout(() => {
-      const allImgs = Array.from(clone.querySelectorAll('img'));
-      const imgReady = allImgs.map(img =>
-        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
-      );
-
-      Promise.all(imgReady).then(() => {
-        const opt = {
-          margin:      [10, 12, 12, 12],
-          filename:    filename,
-          image:       { type: 'jpeg', quality: 0.92 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            width: 800,
-            windowWidth: 800,
-            scrollX: 0,
-            scrollY: 0,
-          },
-          jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak:   { mode: ['css', 'legacy'], avoid: ['.stat-card', '.assess-card', '.chart-section', '.district-section'] },
-        };
-
-        return html2pdf().set(opt).from(clone).save();
-      })
-      .then(() => {
-        document.body.removeChild(offscreen);
-        restoreButtons();
-      })
-      .catch(err => {
-        console.error('PDF generation error:', err);
-        try { document.body.removeChild(offscreen); } catch (e) {}
-        restoreButtons();
-        // Fallback to browser print dialog
-        if (confirm('Automatyczny PDF nie zadziałał.\nOtworzyć okno drukowania? (Zapisz jako PDF)')) {
-          window.print();
-        }
-      });
-    }, 500);
+    window.print();
   }
 
   document.getElementById("print-btn").addEventListener("click", downloadPDF);
