@@ -202,7 +202,7 @@ def parse_gml_lokale(xml_text):
             'price': int(cena),
             'priceM2': price_m2,
             'date': date_str,
-            'market': 'wtorny' if rynek == 'wtorny' else ('pierwotny' if rynek == 'pierwotny' else rynek),
+            'market': 'wtórny' if rynek == 'wtorny' else ('pierwotny' if rynek == 'pierwotny' else rynek),
         })
 
     return results
