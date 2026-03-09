@@ -104,8 +104,8 @@ function renderTrendChart(data) {
   if (trendChart) trendChart.destroy();
 
   const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280);
-  gradient.addColorStop(0, 'rgba(13,148,136,0.15)');
-  gradient.addColorStop(1, 'rgba(13,148,136,0)');
+  gradient.addColorStop(0, 'rgba(5,150,105,0.15)');
+  gradient.addColorStop(1, 'rgba(5,150,105,0)');
 
   trendChart = new Chart(ctx, {
     type: "line",
@@ -114,11 +114,11 @@ function renderTrendChart(data) {
       datasets: [{
         label: "Średnia PLN/m²",
         data: data.map(q => q.avg),
-        borderColor: "#14b8a6",
+        borderColor: "#10b981",
         backgroundColor: gradient,
         borderWidth: 2.5,
-        pointBackgroundColor: "#14b8a6",
-        pointBorderColor: "#0f1115",
+        pointBackgroundColor: "#10b981",
+        pointBorderColor: "#0e1117",
         pointBorderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
@@ -137,7 +137,7 @@ function renderTrendChart(data) {
           bodyFont: { family: "'Inter'", size: 14, weight: '700' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(13,148,136,0.2)",
+          borderColor: "rgba(5,150,105,0.2)",
           borderWidth: 1,
           displayColors: false,
           callbacks: { label: (c) => fmt(c.parsed.y) + " PLN/m²" },
@@ -168,7 +168,7 @@ function renderDistrictChart(districtStats) {
 
   const top = districtStats.slice(0, 12); // Max 12 dzielnic
   const colors = top.map((_, i) => {
-    const hue = 168 + (i * 12); // Odcienie teal → cyan → blue
+    const hue = 145 + (i * 10); // Odcienie emerald → green → cyan
     return `hsla(${hue % 360}, 70%, 65%, 0.8)`;
   });
 
@@ -198,7 +198,7 @@ function renderDistrictChart(districtStats) {
           bodyFont: { family: "'Inter'", size: 14, weight: '700' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(13,148,136,0.2)",
+          borderColor: "rgba(5,150,105,0.2)",
           borderWidth: 1,
           displayColors: false,
           callbacks: {
@@ -237,7 +237,7 @@ function assess(userPM2, stats) {
   } else if (diff < -3) {
     verdict = "Lekko poniżej"; detail = `Cena ${Math.abs(diff)}% poniżej mediany. Konkurencyjna oferta.`; color = "#4ade80";
   } else if (diff <= 3) {
-    verdict = "Cena rynkowa"; detail = `Cena zgodna z medianą (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#14b8a6";
+    verdict = "Cena rynkowa"; detail = `Cena zgodna z medianą (${diff > 0 ? "+" : ""}${diff}%). Solidna pozycja negocjacyjna.`; color = "#10b981";
   } else if (diff <= 8) {
     verdict = "Lekko powyżej"; detail = `Cena +${diff}% powyżej mediany. Uzasadnione przy wyższym standardzie.`; color = "#f59e0b";
   } else {
@@ -314,7 +314,7 @@ function renderDistrictTrendChart(quarterlyData) {
   if (districtTrendChart) districtTrendChart.destroy();
 
   const palette = [
-    "#14b8a6", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899",
+    "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899",
   ];
 
   districtTrendChart = new Chart(ctx, {
@@ -355,7 +355,7 @@ function renderDistrictTrendChart(quarterlyData) {
           bodyFont: { family: "'Inter'", size: 13, weight: '600' },
           padding: 14,
           cornerRadius: 10,
-          borderColor: "rgba(13,148,136,0.2)",
+          borderColor: "rgba(5,150,105,0.2)",
           borderWidth: 1,
           callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.y)} PLN/m²` },
         },
@@ -705,7 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — html2canvas screenshot → jsPDF manual pagination → direct download
+  // PDF — per-section html2canvas → jsPDF with smart page breaks
   async function downloadPDF() {
     const container = document.getElementById("report-container");
     if (!container) return;
@@ -729,11 +729,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function restore() {
-      // Restore canvases
       canvasBackup.forEach(b => {
         try { b.parent.replaceChild(b.canvas, b.img); } catch (e) {}
       });
-      // Restore chart colors to original dark-theme values
       chartSavedOptions.forEach(saved => {
         const chart = saved.chart;
         const s = chart.options.scales;
@@ -745,18 +743,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (leg && saved.legendColor !== undefined) leg.color = saved.legendColor;
         chart.update('none');
       });
-      // Remove pdf-render mode
       container.classList.remove('pdf-render');
-      // Restore buttons
       btns.forEach(b => { b.disabled = false; b.innerHTML = origHTML; });
     }
 
-    // 1) Fix counter values (animated from 0)
+    // 1) Fix counter values
     container.querySelectorAll('.counter').forEach(el => {
       el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    // 2) Switch charts to dark text (white labels invisible on white PDF bg)
+    // 2) Switch charts to dark text for white PDF background
     const chartSavedOptions = [];
     [trendChart, districtChart, districtTrendChart].forEach(chart => {
       if (!chart) return;
@@ -773,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chart.update('none');
     });
 
-    // 3) Replace Chart.js canvases with static images (now with dark labels)
+    // 3) Replace Chart.js canvases with static images
     const canvasBackup = [];
     container.querySelectorAll('canvas').forEach(cvs => {
       try {
@@ -783,7 +779,7 @@ document.addEventListener("DOMContentLoaded", () => {
         img.style.cssText = `width:${cvs.offsetWidth}px;height:${cvs.offsetHeight}px;display:block;`;
         canvasBackup.push({ parent: cvs.parentNode, canvas: cvs, img });
         cvs.parentNode.replaceChild(img, cvs);
-      } catch (e) { /* tainted */ }
+      } catch (e) {}
     });
 
     // 4) Switch to light PDF theme
@@ -798,20 +794,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     try {
-      // 6) Capture entire container as one tall image
-      const captureWidth = container.scrollWidth || 800;
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: captureWidth,
-        windowWidth: captureWidth,
-        scrollX: 0,
-        scrollY: -window.scrollY,
-      });
-
-      // 7) Paginate into A4 PDF
       const { jsPDF } = jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = 210;
@@ -819,26 +801,85 @@ document.addEventListener("DOMContentLoaded", () => {
       const margin = 8;
       const contentW = pageW - 2 * margin;
       const contentH = pageH - 2 * margin;
+      const captureWidth = container.scrollWidth || 800;
+      const scale = 2;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      const imgH = (canvas.height * contentW) / canvas.width;
+      // 6) Capture each section separately
+      const sections = Array.from(container.children).filter(el => {
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && el.offsetHeight > 0;
+      });
 
-      let y = 0;
-      let page = 0;
+      let curY = margin; // current Y position on page (mm)
+      let pageNum = 0;
 
-      while (y < imgH) {
-        if (page > 0) pdf.addPage();
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        const sectionCanvas = await html2canvas(section, {
+          scale: scale,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: captureWidth,
+          windowWidth: captureWidth,
+          scrollX: 0,
+          scrollY: -window.scrollY,
+        });
 
-        // Draw a slice of the full image on each page
-        pdf.addImage(imgData, 'JPEG', margin, margin - y, contentW, imgH);
+        const sectionImgData = sectionCanvas.toDataURL('image/jpeg', 0.92);
+        const sectionH_mm = (sectionCanvas.height / scale) * (contentW / captureWidth);
 
-        // White rectangles to clip overflow (top/bottom margins)
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(0, 0, pageW, margin, 'F');                    // top margin
-        pdf.rect(0, pageH - margin, pageW, margin, 'F');       // bottom margin
+        // If section fits on current page → place it
+        if (curY + sectionH_mm <= pageH - margin) {
+          pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+          curY += sectionH_mm;
+        }
+        // If section fits on a fresh page → new page, place it
+        else if (sectionH_mm <= contentH) {
+          pdf.addPage();
+          pageNum++;
+          curY = margin;
+          pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+          curY += sectionH_mm;
+        }
+        // Section is taller than one page → slice it across pages
+        else {
+          // Start on new page if not at top
+          if (curY > margin + 1) {
+            pdf.addPage();
+            pageNum++;
+            curY = margin;
+          }
 
-        y += contentH;
-        page++;
+          let sliceY = 0; // px offset in the section canvas
+          const totalPx = sectionCanvas.height;
+
+          while (sliceY < totalPx) {
+            const availH_mm = pageH - margin - curY;
+            const availH_px = Math.floor(availH_mm / (contentW / captureWidth) * scale);
+            const sliceH_px = Math.min(availH_px, totalPx - sliceY);
+            const sliceH_mm = (sliceH_px / scale) * (contentW / captureWidth);
+
+            // Create a slice canvas
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = sectionCanvas.width;
+            sliceCanvas.height = sliceH_px;
+            const ctx = sliceCanvas.getContext('2d');
+            ctx.drawImage(sectionCanvas, 0, sliceY, sectionCanvas.width, sliceH_px, 0, 0, sectionCanvas.width, sliceH_px);
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+
+            pdf.addImage(sliceData, 'JPEG', margin, curY, contentW, sliceH_mm);
+            sliceY += sliceH_px;
+            curY += sliceH_mm;
+
+            // Need more pages?
+            if (sliceY < totalPx) {
+              pdf.addPage();
+              pageNum++;
+              curY = margin;
+            }
+          }
+        }
       }
 
       pdf.save(filename);
