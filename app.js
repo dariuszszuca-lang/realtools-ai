@@ -705,17 +705,120 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // PDF — use browser's native print (reliable, uses @media print CSS)
-  function downloadPDF() {
+  // PDF — html2canvas screenshot → jsPDF manual pagination → direct download
+  async function downloadPDF() {
     const container = document.getElementById("report-container");
     if (!container) return;
 
-    // Fix counter values (they animate from 0, print needs final values)
+    if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
+      alert('Biblioteki PDF nie załadowały się. Odśwież stronę.');
+      return;
+    }
+
+    // --- File name ---
+    const city = container.querySelector('.report-city')?.textContent?.trim() || 'Raport';
+    const safeName = city.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9\s·]/g, '').replace(/[\s·]+/g, '_').replace(/_+$/, '');
+    const filename = `RCT_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    // --- Loading state ---
+    const btns = [document.getElementById('print-btn'), document.getElementById('print-btn-bottom')].filter(Boolean);
+    const origHTML = btns[0]?.innerHTML;
+    btns.forEach(b => {
+      b.disabled = true;
+      b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF…';
+    });
+
+    function restore() {
+      // Restore canvases
+      canvasBackup.forEach(b => {
+        try { b.parent.replaceChild(b.canvas, b.img); } catch (e) {}
+      });
+      // Remove pdf-render mode
+      container.classList.remove('pdf-render');
+      // Restore buttons
+      btns.forEach(b => { b.disabled = false; b.innerHTML = origHTML; });
+    }
+
+    // 1) Fix counter values (animated from 0)
     container.querySelectorAll('.counter').forEach(el => {
       el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    window.print();
+    // 2) Replace Chart.js canvases with static images
+    const canvasBackup = [];
+    container.querySelectorAll('canvas').forEach(cvs => {
+      try {
+        const url = cvs.toDataURL('image/png', 1.0);
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.cssText = `width:${cvs.offsetWidth}px;height:${cvs.offsetHeight}px;display:block;`;
+        canvasBackup.push({ parent: cvs.parentNode, canvas: cvs, img });
+        cvs.parentNode.replaceChild(img, cvs);
+      } catch (e) { /* tainted */ }
+    });
+
+    // 3) Switch to light PDF theme
+    container.classList.add('pdf-render');
+
+    // 4) Wait for repaint + images
+    await new Promise(r => setTimeout(r, 500));
+    await Promise.all(
+      Array.from(container.querySelectorAll('img')).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+      )
+    );
+
+    try {
+      // 5) Capture entire container as one tall image
+      const captureWidth = container.scrollWidth || 800;
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: captureWidth,
+        windowWidth: captureWidth,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+      });
+
+      // 6) Paginate into A4 PDF
+      const { jsPDF } = jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 8;
+      const contentW = pageW - 2 * margin;
+      const contentH = pageH - 2 * margin;
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgH = (canvas.height * contentW) / canvas.width;
+
+      let y = 0;
+      let page = 0;
+
+      while (y < imgH) {
+        if (page > 0) pdf.addPage();
+
+        // Draw a slice of the full image on each page
+        pdf.addImage(imgData, 'JPEG', margin, margin - y, contentW, imgH);
+
+        // White rectangles to clip overflow (top/bottom margins)
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pageW, margin, 'F');                    // top margin
+        pdf.rect(0, pageH - margin, pageW, margin, 'F');       // bottom margin
+
+        y += contentH;
+        page++;
+      }
+
+      pdf.save(filename);
+    } catch (err) {
+      console.error('PDF error:', err);
+      alert('Błąd generowania PDF: ' + err.message);
+    }
+
+    restore();
   }
 
   document.getElementById("print-btn").addEventListener("click", downloadPDF);
