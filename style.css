@@ -250,6 +250,8 @@ body::before {
 .pdf-render * {
   animation: none !important;
   transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 .pdf-render .stats-row {
   display: grid !important;

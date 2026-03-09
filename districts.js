@@ -348,7 +348,8 @@ function getDistrict(city, address) {
 function enrichWithDistricts(transactions) {
   return transactions.map(tx => ({
     ...tx,
-    district: getDistrict(tx.city, tx.address) || "Inne"
+    // Zachowaj dzielnicę z serwera (districts_data.json) jeśli istnieje
+    district: tx.district || getDistrict(tx.city, tx.address) || "Inne"
   }));
 }
 

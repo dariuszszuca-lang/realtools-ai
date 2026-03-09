@@ -10,8 +10,10 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import re
+import os
 from datetime import datetime
 from math import radians, cos
+from pathlib import Path
 
 # --- CONFIG ---
 
@@ -38,6 +40,48 @@ NBP_PRICES = {
 }
 
 WFS_URL = "https://mapy.geoportal.gov.pl/wss/service/rcn"
+
+# --- DISTRICT MAPPING (loaded from districts_data.json) ---
+DISTRICT_MAP = {}
+_districts_file = Path(__file__).parent.parent / "data" / "districts_data.json"
+if _districts_file.exists():
+    try:
+        DISTRICT_MAP = json.loads(_districts_file.read_text(encoding='utf-8'))
+    except Exception:
+        pass
+
+
+def get_district(city, address):
+    """Assign district based on city + address."""
+    if not city or not address:
+        return None
+    street = re.sub(r'\s+\d+[\w/\-]*\s*$', '', address).strip()
+    city_map = DISTRICT_MAP.get(city, {})
+    if not city_map:
+        return None
+    if street in city_map:
+        return city_map[street]
+    for key, district in city_map.items():
+        if street in key or key in street:
+            return district
+    stripped = re.sub(r'^(ul\.|al\.|os\.|pl\.|gen\.|ks\.|prof\.|marsz\.|mjr\.?)\s*', '', street, flags=re.IGNORECASE).strip()
+    if stripped != street:
+        if stripped in city_map:
+            return city_map[stripped]
+        for key, district in city_map.items():
+            clean_key = re.sub(r'^(ul\.|al\.|os\.|pl\.|gen\.|ks\.|prof\.|marsz\.|mjr\.?)\s*', '', key, flags=re.IGNORECASE).strip()
+            if stripped in clean_key or clean_key in stripped:
+                return district
+    return None
+
+
+def enrich_with_districts(transactions):
+    """Add district field to transactions."""
+    for tx in transactions:
+        d = get_district(tx.get('city', ''), tx.get('address', ''))
+        if d:
+            tx['district'] = d
+    return transactions
 
 
 # --- LOGIC (from server.py) ---
@@ -204,6 +248,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         transactions = fetch_rcn_data(city)
+        transactions = enrich_with_districts(transactions)
         transactions.sort(key=lambda t: t['date'], reverse=True)
         stats = compute_stats(transactions)
 
