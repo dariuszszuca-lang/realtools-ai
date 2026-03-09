@@ -733,6 +733,18 @@ document.addEventListener("DOMContentLoaded", () => {
       canvasBackup.forEach(b => {
         try { b.parent.replaceChild(b.canvas, b.img); } catch (e) {}
       });
+      // Restore chart colors to original dark-theme values
+      chartSavedOptions.forEach(saved => {
+        const chart = saved.chart;
+        const s = chart.options.scales;
+        if (saved.xTickColor !== undefined) s.x.ticks.color = saved.xTickColor;
+        if (saved.yTickColor !== undefined) s.y.ticks.color = saved.yTickColor;
+        if (saved.xGridColor !== undefined) s.x.grid.color = saved.xGridColor;
+        if (saved.yGridColor !== undefined) s.y.grid.color = saved.yGridColor;
+        const leg = chart.options.plugins?.legend?.labels;
+        if (leg && saved.legendColor !== undefined) leg.color = saved.legendColor;
+        chart.update('none');
+      });
       // Remove pdf-render mode
       container.classList.remove('pdf-render');
       // Restore buttons
@@ -744,7 +756,24 @@ document.addEventListener("DOMContentLoaded", () => {
       el.textContent = fmt(parseInt(el.dataset.target));
     });
 
-    // 2) Replace Chart.js canvases with static images
+    // 2) Switch charts to dark text (white labels invisible on white PDF bg)
+    const chartSavedOptions = [];
+    [trendChart, districtChart, districtTrendChart].forEach(chart => {
+      if (!chart) return;
+      const saved = {};
+      const s = chart.options.scales;
+      if (s.x && s.x.ticks) { saved.xTickColor = s.x.ticks.color; s.x.ticks.color = '#475569'; }
+      if (s.y && s.y.ticks) { saved.yTickColor = s.y.ticks.color; s.y.ticks.color = '#475569'; }
+      if (s.x && s.x.grid) { saved.xGridColor = s.x.grid.color; s.x.grid.color = 'rgba(0,0,0,0.06)'; }
+      if (s.y && s.y.grid) { saved.yGridColor = s.y.grid.color; s.y.grid.color = 'rgba(0,0,0,0.06)'; }
+      const leg = chart.options.plugins?.legend?.labels;
+      if (leg) { saved.legendColor = leg.color; leg.color = '#475569'; }
+      saved.chart = chart;
+      chartSavedOptions.push(saved);
+      chart.update('none');
+    });
+
+    // 3) Replace Chart.js canvases with static images (now with dark labels)
     const canvasBackup = [];
     container.querySelectorAll('canvas').forEach(cvs => {
       try {
@@ -757,10 +786,10 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (e) { /* tainted */ }
     });
 
-    // 3) Switch to light PDF theme
+    // 4) Switch to light PDF theme
     container.classList.add('pdf-render');
 
-    // 4) Wait for repaint + images
+    // 5) Wait for repaint + images
     await new Promise(r => setTimeout(r, 500));
     await Promise.all(
       Array.from(container.querySelectorAll('img')).map(img =>
@@ -769,7 +798,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     try {
-      // 5) Capture entire container as one tall image
+      // 6) Capture entire container as one tall image
       const captureWidth = container.scrollWidth || 800;
       const canvas = await html2canvas(container, {
         scale: 2,
@@ -782,7 +811,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scrollY: -window.scrollY,
       });
 
-      // 6) Paginate into A4 PDF
+      // 7) Paginate into A4 PDF
       const { jsPDF } = jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = 210;
