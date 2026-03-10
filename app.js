@@ -380,7 +380,7 @@ function renderDistrictTrendChart(quarterlyData) {
 
 // --- REPORT BUILDER ---
 function buildReport(data, params) {
-  const { miasto, dzielnica, typ, metraz, cena, limit } = params;
+  const { miasto, dzielnica, typ, metraz, cena, limit, remont, czynsz, kosztyMiesieczne } = params;
   let txs = data.transactions || [];
 
   // District stats computed on ALL transactions (for ranking/comparison)
@@ -606,6 +606,63 @@ function buildReport(data, params) {
     </div>
     ` : ''}
 
+    ${cena > 0 && czynsz > 0 ? (() => {
+      const totalInvest = cena + remont;
+      const netMonthly = czynsz - kosztyMiesieczne;
+      const netYearly = netMonthly * 12;
+      const roiPercent = totalInvest > 0 ? +((netYearly / totalInvest) * 100).toFixed(2) : 0;
+      const paybackMonths = netMonthly > 0 ? Math.ceil(totalInvest / netMonthly) : 0;
+      const paybackYears = paybackMonths > 0 ? +(paybackMonths / 12).toFixed(1) : 0;
+      const cashOnCash5y = totalInvest > 0 ? +(((netYearly * 5) / totalInvest) * 100).toFixed(1) : 0;
+
+      let verdict, verdictClass;
+      if (roiPercent >= 7) { verdict = 'Bardzo dobra rentowność — powyżej średniej rynkowej'; verdictClass = 'positive'; }
+      else if (roiPercent >= 5) { verdict = 'Dobra rentowność — zgodna ze średnią rynkową'; verdictClass = 'neutral'; }
+      else if (roiPercent >= 3) { verdict = 'Umiarkowana rentowność — poniżej średniej, ale stabilna'; verdictClass = 'neutral'; }
+      else { verdict = 'Niska rentowność — rozważ negocjację ceny lub wyższy czynsz'; verdictClass = 'negative'; }
+
+      return `
+    <!-- Investment Analysis -->
+    <div class="invest-card reveal">
+      <div class="section-title">Analiza opłacalności inwestycji</div>
+      <div class="invest-grid">
+        <div class="invest-metric">
+          <div class="invest-metric-label">Całkowita inwestycja</div>
+          <div class="invest-metric-value neutral">${fmtPLN(totalInvest)}</div>
+          <div class="invest-metric-sub">Cena ${fmtPLN(cena)}${remont > 0 ? ' + remont ' + fmtPLN(remont) : ''}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Dochód netto / mies.</div>
+          <div class="invest-metric-value ${netMonthly > 0 ? 'positive' : 'negative'}">${fmtPLN(netMonthly)}</div>
+          <div class="invest-metric-sub">Czynsz ${fmtPLN(czynsz)} − koszty ${fmtPLN(kosztyMiesieczne)}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Dochód netto / rok</div>
+          <div class="invest-metric-value ${netYearly > 0 ? 'positive' : 'negative'}">${fmtPLN(netYearly)}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">ROI roczne</div>
+          <div class="invest-metric-value ${roiPercent >= 5 ? 'positive' : roiPercent >= 3 ? 'neutral' : 'negative'}">${roiPercent}%</div>
+          <div class="invest-metric-sub">zwrot z inwestycji</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Zwrot inwestycji</div>
+          <div class="invest-metric-value neutral">${paybackYears > 0 ? paybackYears + ' lat' : '—'}</div>
+          <div class="invest-metric-sub">${paybackMonths > 0 ? paybackMonths + ' miesięcy' : 'ujemny cash flow'}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Cash-on-cash 5 lat</div>
+          <div class="invest-metric-value ${cashOnCash5y >= 25 ? 'positive' : 'neutral'}">${cashOnCash5y}%</div>
+          <div class="invest-metric-sub">skumulowany zwrot</div>
+        </div>
+      </div>
+      <div class="invest-summary">
+        <div class="invest-summary-title">Podsumowanie</div>
+        <div class="invest-summary-text">${verdict}. Przy czynszu ${fmtPLN(czynsz)}/mies. i kosztach ${fmtPLN(kosztyMiesieczne)}/mies., inwestycja zwróci się w ${paybackYears > 0 ? paybackYears + ' lat' : '—'}. ${stats ? 'Mediana cen w okolicy: ' + fmt(stats.median) + ' PLN/m².' : ''}</div>
+      </div>
+    </div>`;
+    })() : ''}
+
     <!-- Source -->
     <div class="report-footer">
       Źródło: Rejestr Cen Nieruchomości (RCN) · geoportal.gov.pl · Dane z aktów notarialnych${nbp ? ` · Ceny referencyjne: NBP ${nbp.quarter}` : ''}<br>
@@ -655,6 +712,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const metraz = parseFloat(document.getElementById("rcn-metraz").value) || 0;
     const cena = parseFloat(document.getElementById("rcn-cena").value) || 0;
     const limit = parseInt(document.getElementById("rcn-limit").value) || 0;
+    const remont = parseFloat(document.getElementById("rcn-remont").value) || 0;
+    const czynsz = parseFloat(document.getElementById("rcn-czynsz").value) || 0;
+    const kosztyMiesieczne = parseFloat(document.getElementById("rcn-koszty-miesieczne").value) || 0;
 
     if (!miasto) { alert("Wybierz miasto"); return; }
 
@@ -679,7 +739,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       loadingSection.classList.add("hidden");
-      buildReport(data, { miasto, dzielnica, typ, metraz, cena, limit });
+      buildReport(data, { miasto, dzielnica, typ, metraz, cena, limit, remont, czynsz, kosztyMiesieczne });
       reportOutput.classList.remove("hidden");
       window.scrollTo({ top: 0, behavior: "smooth" });
 

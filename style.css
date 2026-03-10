@@ -521,6 +521,103 @@ header {
 .field select { cursor: pointer; }
 .field select option { background: var(--surface-solid); color: var(--text); }
 
+/* --- FORM DIVIDER --- */
+.form-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 24px 0;
+}
+
+/* --- INVESTMENT SECTION --- */
+.invest-card {
+  background: linear-gradient(145deg, rgba(5,150,105,0.06), var(--surface));
+  border: 1px solid rgba(5,150,105,0.1);
+  border-radius: var(--radius);
+  padding: 32px;
+  margin-bottom: 20px;
+}
+.invest-card .section-title {
+  color: var(--accent-light);
+  margin-bottom: 24px;
+}
+.invest-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.invest-metric {
+  padding: 16px;
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.invest-metric-label {
+  font-size: 10px;
+  color: var(--text-4);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.invest-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+.invest-metric-value.positive { color: var(--green); }
+.invest-metric-value.negative { color: var(--red); }
+.invest-metric-value.neutral { color: var(--accent-light); }
+.invest-metric-sub {
+  font-size: 11px;
+  color: var(--text-4);
+  margin-top: 4px;
+}
+.invest-summary {
+  padding: 20px;
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+.invest-summary-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-light);
+  margin-bottom: 8px;
+}
+.invest-summary-text {
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .invest-grid { grid-template-columns: 1fr; }
+}
+
+/* --- PDF render: investment section --- */
+.pdf-render .invest-card {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4) !important;
+  border: 1px solid #86efac !important;
+}
+.pdf-render .invest-card .section-title { color: #047857 !important; }
+.pdf-render .invest-metric {
+  background: #ffffff !important;
+  border: 1px solid #e2e2ee !important;
+}
+.pdf-render .invest-metric-label { color: #94a3b8 !important; }
+.pdf-render .invest-metric-value { color: #1e1e2e !important; }
+.pdf-render .invest-metric-value.positive { color: #16a34a !important; }
+.pdf-render .invest-metric-value.negative { color: #dc2626 !important; }
+.pdf-render .invest-metric-value.neutral { color: #047857 !important; }
+.pdf-render .invest-metric-sub { color: #94a3b8 !important; }
+.pdf-render .invest-summary {
+  background: #ffffff !important;
+  border: 1px solid #e2e2ee !important;
+  border-left: 3px solid #047857 !important;
+}
+.pdf-render .invest-summary-title { color: #047857 !important; }
+.pdf-render .invest-summary-text { color: #64748b !important; }
+
 /* --- BUTTONS --- */
 .btn-primary {
   display: flex;
