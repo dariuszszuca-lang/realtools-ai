@@ -6,7 +6,9 @@
   <title>Kalkulator ROI — RCT</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=7.0">
+  <link rel="stylesheet" href="style.css?v=7.1">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -105,6 +107,25 @@
         <!-- RESULTS (shown instantly) -->
         <div id="results" class="hidden">
 
+          <div class="output-bar">
+            <div class="output-actions">
+              <button id="pdf-btn" class="btn-outline" onclick="downloadPDF()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+                Pobierz PDF
+              </button>
+            </div>
+          </div>
+
+          <div id="pdf-container">
+
+          <div class="print-header">
+            <div class="print-header__logo">
+              <div class="print-header__mark">RCT</div>
+              <div class="print-header__name">Kalkulator <span>ROI</span></div>
+            </div>
+            <div class="print-header__meta">Analiza inwestycyjna<br>Rejestr Cen Transakcyjnych</div>
+          </div>
+
           <div class="invest-card" id="result-card">
             <div class="section-head">
               <div class="section-title">Wynik analizy inwestycyjnej</div>
@@ -126,7 +147,24 @@
             </div>
           </div>
 
+          <div class="report-footer" style="margin-top:12px">
+            Źródło: RCT — Rejestr Cen Transakcyjnych · Kalkulator ROI<br>
+            Raport wygenerowany: <span id="result-date"></span> · Charakter informacyjny
+          </div>
+
+          <div class="print-footer">
+            <strong>RCT — Rejestr Cen Transakcyjnych</strong> — Kalkulator opłacalności inwestycji w nieruchomości<br>
+            Raport ma charakter informacyjny i nie stanowi porady inwestycyjnej.
+          </div>
+
+          </div><!-- /pdf-container -->
+
           <div style="text-align:center;margin-top:24px">
+            <button id="pdf-btn-bottom" class="btn-outline" onclick="downloadPDF()" style="margin-bottom:12px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+              Pobierz PDF
+            </button>
+            <br>
             <button id="reset-btn" class="btn-ghost">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
               Nowa kalkulacja
@@ -297,9 +335,104 @@
         </div>
       `;
 
+      // Date
+      document.getElementById("result-date").textContent = new Date().toLocaleDateString('pl-PL');
+
       // Show results
       document.getElementById("results").classList.remove("hidden");
       document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // --- PDF generation ---
+    async function downloadPDF() {
+      const container = document.getElementById("pdf-container");
+      if (!container) return;
+
+      const filename = `ROI_Analiza_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      // Loading state
+      const btns = [document.getElementById('pdf-btn'), document.getElementById('pdf-btn-bottom')].filter(Boolean);
+      const origHTML = btns[0]?.innerHTML;
+      btns.forEach(b => {
+        b.disabled = true;
+        b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF…';
+      });
+
+      // Switch to light theme
+      container.classList.add('pdf-render');
+      await new Promise(r => setTimeout(r, 300));
+
+      try {
+        const { jsPDF } = jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageW = 210, pageH = 297, margin = 8;
+        const contentW = pageW - 2 * margin;
+        const contentH = pageH - 2 * margin;
+        const captureWidth = container.scrollWidth || 800;
+        const scale = 2;
+
+        const sections = Array.from(container.children).filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && el.offsetHeight > 0;
+        });
+
+        let curY = margin;
+
+        for (let i = 0; i < sections.length; i++) {
+          const sectionCanvas = await html2canvas(sections[i], {
+            scale, useCORS: true, logging: false, backgroundColor: '#ffffff',
+            width: captureWidth, windowWidth: captureWidth,
+            scrollX: 0, scrollY: -window.scrollY,
+          });
+
+          const sectionImgData = sectionCanvas.toDataURL('image/jpeg', 0.92);
+          const sectionH_mm = (sectionCanvas.height / scale) * (contentW / captureWidth);
+
+          if (curY + sectionH_mm <= pageH - margin) {
+            pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+            curY += sectionH_mm;
+          } else if (sectionH_mm <= contentH) {
+            pdf.addPage();
+            curY = margin;
+            pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+            curY += sectionH_mm;
+          } else {
+            if (curY > margin + 1) { pdf.addPage(); curY = margin; }
+            let sliceY = 0;
+            const totalPx = sectionCanvas.height;
+            while (sliceY < totalPx) {
+              const availH_mm = pageH - margin - curY;
+              const availH_px = Math.floor(availH_mm / (contentW / captureWidth) * scale);
+              const sliceH_px = Math.min(availH_px, totalPx - sliceY);
+              const sliceH_mm = (sliceH_px / scale) * (contentW / captureWidth);
+              const sliceCanvas = document.createElement('canvas');
+              sliceCanvas.width = sectionCanvas.width;
+              sliceCanvas.height = sliceH_px;
+              sliceCanvas.getContext('2d').drawImage(sectionCanvas, 0, sliceY, sectionCanvas.width, sliceH_px, 0, 0, sectionCanvas.width, sliceH_px);
+              pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, curY, contentW, sliceH_mm);
+              sliceY += sliceH_px;
+              curY += sliceH_mm;
+              if (sliceY < totalPx) { pdf.addPage(); curY = margin; }
+            }
+          }
+        }
+
+        pdf.save(filename);
+      } catch (err) {
+        console.error('PDF error:', err);
+        alert('Błąd generowania PDF: ' + err.message);
+      }
+
+      container.classList.remove('pdf-render');
+      btns.forEach(b => { b.disabled = false; b.innerHTML = origHTML; });
+    }
+
+    // Spin keyframe
+    if (!document.getElementById('spin-style')) {
+      const s = document.createElement('style');
+      s.id = 'spin-style';
+      s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(s);
     }
   </script>
 

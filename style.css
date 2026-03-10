@@ -643,6 +643,11 @@ header {
 }
 .pdf-render .invest-summary-title { color: #047857 !important; }
 .pdf-render .invest-summary-text { color: #64748b !important; }
+.pdf-render .roi-highlight {
+  background: #ffffff !important;
+  border: 2px solid #047857 !important;
+}
+.pdf-render .roi-label { color: #64748b !important; }
 
 /* --- ROI HIGHLIGHT --- */
 .roi-highlight {
