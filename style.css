@@ -360,6 +360,32 @@ header {
   .logo-sub { display: block; }
 }
 
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.2s var(--ease);
+}
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+}
+.nav-link.active {
+  color: var(--accent-light);
+  background: var(--accent-glow);
+}
+@media (max-width: 640px) {
+  .nav-link { font-size: 11px; padding: 5px 10px; }
+}
+
 .header-meta {
   display: flex;
   align-items: center;
@@ -617,6 +643,35 @@ header {
 }
 .pdf-render .invest-summary-title { color: #047857 !important; }
 .pdf-render .invest-summary-text { color: #64748b !important; }
+
+/* --- ROI HIGHLIGHT --- */
+.roi-highlight {
+  text-align: center;
+  padding: 32px 20px;
+  margin-bottom: 24px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: rgba(0,0,0,0.2);
+}
+.roi-number {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--accent-light);
+}
+.roi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-top: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+@media (max-width: 640px) {
+  .roi-number { font-size: 48px; }
+  .roi-highlight { padding: 24px 16px; }
+}
 
 /* --- BUTTONS --- */
 .btn-primary {

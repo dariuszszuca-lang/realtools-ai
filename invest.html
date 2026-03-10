@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator ROI — RCT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=7.0">
+</head>
+<body>
+
+  <div class="mesh-bg"></div>
+
+  <div class="page-content">
+
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="logo-text">RCT</div>
+          <div class="logo-sub">Rejestr Cen Transakcyjnych</div>
+        </div>
+        <nav class="header-nav">
+          <a href="/" class="nav-link">Raport cen</a>
+          <a href="/invest.html" class="nav-link active">Kalkulator ROI</a>
+        </nav>
+        <div class="header-meta">
+          <span class="header-source">kalkulator inwestycyjny</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+
+      <section class="hero" style="padding:60px 24px 40px">
+        <div class="hero-tag">Analiza opłacalności</div>
+        <h1>Kalkulator <span class="gradient-text">ROI</span></h1>
+        <p class="subtitle">Sprawdź rentowność inwestycji w nieruchomość — wynik natychmiast</p>
+      </section>
+
+      <div class="container">
+        <div class="glass-card form-card">
+          <div class="card-top">
+            <div class="card-title">Dane inwestycji</div>
+            <div class="card-label">Parametry</div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="inv-cena">Cena zakupu nieruchomości (PLN)</label>
+              <input type="number" id="inv-cena" placeholder="np. 550000">
+            </div>
+            <div class="field">
+              <label for="inv-metraz">Metraż (m²)</label>
+              <input type="number" id="inv-metraz" placeholder="np. 48">
+            </div>
+            <div class="field">
+              <label for="inv-remont">Koszt remontu (PLN)</label>
+              <input type="number" id="inv-remont" placeholder="np. 40000" value="0">
+            </div>
+            <div class="field">
+              <label for="inv-notariusz">Koszty transakcyjne (notariusz, PCC, prowizja)</label>
+              <input type="number" id="inv-notariusz" placeholder="np. 15000" value="0">
+            </div>
+            <div class="field">
+              <label for="inv-czynsz">Przewidywany czynsz najmu (PLN/mies.)</label>
+              <input type="number" id="inv-czynsz" placeholder="np. 3200">
+            </div>
+            <div class="field">
+              <label for="inv-koszty">Koszty miesięczne (admin, media, ubezp.)</label>
+              <input type="number" id="inv-koszty" placeholder="np. 800">
+            </div>
+            <div class="field">
+              <label for="inv-pustostany">Pustostany (mies./rok)</label>
+              <select id="inv-pustostany">
+                <option value="0">0 — ciągły najem</option>
+                <option value="0.5">0.5 mies.</option>
+                <option value="1" selected>1 mies.</option>
+                <option value="2">2 mies.</option>
+                <option value="3">3 mies.</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="inv-podatek">Podatek ryczałtowy (%)</label>
+              <select id="inv-podatek">
+                <option value="8.5" selected>8.5% (do 100 tys./rok)</option>
+                <option value="12.5">12.5% (powyżej 100 tys./rok)</option>
+                <option value="0">Brak (np. najem prywatny przed 2023)</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="calc-btn" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20"/></svg>
+            Oblicz rentowność
+          </button>
+        </div>
+
+        <!-- RESULTS (shown instantly) -->
+        <div id="results" class="hidden">
+
+          <div class="invest-card" id="result-card">
+            <div class="section-head">
+              <div class="section-title">Wynik analizy inwestycyjnej</div>
+              <div class="section-tag" id="result-verdict-tag"></div>
+            </div>
+
+            <!-- Main ROI highlight -->
+            <div class="roi-highlight" id="roi-highlight">
+              <div class="roi-number" id="roi-number">0%</div>
+              <div class="roi-label">ROI roczne netto</div>
+            </div>
+
+            <div class="invest-grid" id="result-metrics">
+              <!-- Filled by JS -->
+            </div>
+
+            <div class="invest-summary" id="result-summary">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-top:24px">
+            <button id="reset-btn" class="btn-ghost">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Nowa kalkulacja
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>RCT — Rejestr Cen Transakcyjnych &mdash; <a href="/">Raport cen</a> · <a href="/invest.html">Kalkulator ROI</a></p>
+      <p style="margin-top:4px;font-size:11px;color:var(--text-4)">Kalkulator ma charakter informacyjny — nie stanowi porady inwestycyjnej</p>
+    </footer>
+
+  </div>
+
+  <script>
+    const fmt = (n) => n.toLocaleString("pl-PL");
+    const fmtPLN = (n) => fmt(n) + " PLN";
+
+    document.getElementById("calc-btn").addEventListener("click", calculate);
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      document.getElementById("results").classList.add("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    function calculate() {
+      const cena = parseFloat(document.getElementById("inv-cena").value) || 0;
+      const metraz = parseFloat(document.getElementById("inv-metraz").value) || 0;
+      const remont = parseFloat(document.getElementById("inv-remont").value) || 0;
+      const notariusz = parseFloat(document.getElementById("inv-notariusz").value) || 0;
+      const czynsz = parseFloat(document.getElementById("inv-czynsz").value) || 0;
+      const koszty = parseFloat(document.getElementById("inv-koszty").value) || 0;
+      const pustostany = parseFloat(document.getElementById("inv-pustostany").value) || 0;
+      const podatekRate = parseFloat(document.getElementById("inv-podatek").value) || 0;
+
+      if (!cena || !czynsz) {
+        alert("Podaj cenę zakupu i przewidywany czynsz najmu");
+        return;
+      }
+
+      // Calculations
+      const totalInvest = cena + remont + notariusz;
+      const cenaM2 = metraz > 0 ? Math.round(cena / metraz) : 0;
+      const activeMonths = 12 - pustostany;
+      const grossYearly = czynsz * activeMonths;
+      const expensesYearly = koszty * 12;
+      const netBeforeTax = grossYearly - expensesYearly;
+      const tax = podatekRate > 0 ? Math.round(grossYearly * podatekRate / 100) : 0;
+      const netYearly = netBeforeTax - tax;
+      const netMonthly = Math.round(netYearly / 12);
+
+      const roiGross = totalInvest > 0 ? +((grossYearly / totalInvest) * 100).toFixed(2) : 0;
+      const roiNet = totalInvest > 0 ? +((netYearly / totalInvest) * 100).toFixed(2) : 0;
+      const paybackMonths = netMonthly > 0 ? Math.ceil(totalInvest / netMonthly) : 0;
+      const paybackYears = paybackMonths > 0 ? +(paybackMonths / 12).toFixed(1) : 0;
+      const cashOnCash5y = totalInvest > 0 ? +(((netYearly * 5) / totalInvest) * 100).toFixed(1) : 0;
+      const cashOnCash10y = totalInvest > 0 ? +(((netYearly * 10) / totalInvest) * 100).toFixed(1) : 0;
+      const yieldGross = cena > 0 ? +((grossYearly / cena) * 100).toFixed(2) : 0;
+
+      // Verdict
+      let verdict, verdictTag, verdictColor;
+      if (roiNet >= 7) {
+        verdict = 'Bardzo dobra rentowność — powyżej średniej rynkowej. Inwestycja atrakcyjna.';
+        verdictTag = 'Bardzo dobra';
+        verdictColor = '#22c55e';
+      } else if (roiNet >= 5) {
+        verdict = 'Dobra rentowność — zgodna ze średnią rynkową dla najmu długoterminowego.';
+        verdictTag = 'Dobra';
+        verdictColor = '#10b981';
+      } else if (roiNet >= 3) {
+        verdict = 'Umiarkowana rentowność — poniżej średniej, ale stabilna. Rozważ negocjację ceny.';
+        verdictTag = 'Umiarkowana';
+        verdictColor = '#f59e0b';
+      } else {
+        verdict = 'Niska rentowność — rozważ negocjację ceny zakupu, wyższy czynsz lub niższe koszty.';
+        verdictTag = 'Niska';
+        verdictColor = '#ef4444';
+      }
+
+      // ROI highlight
+      const roiEl = document.getElementById("roi-number");
+      roiEl.textContent = roiNet + "%";
+      roiEl.style.color = verdictColor;
+      document.getElementById("roi-highlight").style.borderColor = verdictColor;
+
+      // Verdict tag
+      const tagEl = document.getElementById("result-verdict-tag");
+      tagEl.textContent = verdictTag;
+      tagEl.style.color = verdictColor;
+
+      // Metrics grid
+      document.getElementById("result-metrics").innerHTML = `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Całkowita inwestycja</div>
+          <div class="invest-metric-value neutral">${fmtPLN(totalInvest)}</div>
+          <div class="invest-metric-sub">Zakup ${fmtPLN(cena)}${remont > 0 ? ' + remont ' + fmtPLN(remont) : ''}${notariusz > 0 ? ' + koszty ' + fmtPLN(notariusz) : ''}</div>
+        </div>
+        ${cenaM2 > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Cena za m²</div>
+          <div class="invest-metric-value neutral">${fmtPLN(cenaM2)}</div>
+          <div class="invest-metric-sub">${metraz} m²</div>
+        </div>` : ''}
+        <div class="invest-metric">
+          <div class="invest-metric-label">Przychód brutto / rok</div>
+          <div class="invest-metric-value neutral">${fmtPLN(grossYearly)}</div>
+          <div class="invest-metric-sub">${czynsz} PLN × ${activeMonths} mies.${pustostany > 0 ? ' (' + pustostany + ' mies. pustostanu)' : ''}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszty roczne</div>
+          <div class="invest-metric-value negative">${fmtPLN(expensesYearly)}</div>
+          <div class="invest-metric-sub">${fmtPLN(koszty)} × 12 mies.</div>
+        </div>
+        ${tax > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Podatek ryczałtowy</div>
+          <div class="invest-metric-value negative">${fmtPLN(tax)}</div>
+          <div class="invest-metric-sub">${podatekRate}% od przychodu</div>
+        </div>` : ''}
+        <div class="invest-metric">
+          <div class="invest-metric-label">Dochód netto / rok</div>
+          <div class="invest-metric-value ${netYearly > 0 ? 'positive' : 'negative'}">${fmtPLN(netYearly)}</div>
+          <div class="invest-metric-sub">${fmtPLN(netMonthly)} / mies.</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">ROI brutto</div>
+          <div class="invest-metric-value neutral">${roiGross}%</div>
+          <div class="invest-metric-sub">przed kosztami i podatkiem</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">ROI netto</div>
+          <div class="invest-metric-value" style="color:${verdictColor}">${roiNet}%</div>
+          <div class="invest-metric-sub">po kosztach i podatku</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Yield brutto</div>
+          <div class="invest-metric-value neutral">${yieldGross}%</div>
+          <div class="invest-metric-sub">przychód / cena zakupu</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Zwrot inwestycji</div>
+          <div class="invest-metric-value neutral">${paybackYears > 0 ? paybackYears + ' lat' : '—'}</div>
+          <div class="invest-metric-sub">${paybackMonths > 0 ? paybackMonths + ' miesięcy' : 'ujemny cash flow'}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Cash-on-cash 5 lat</div>
+          <div class="invest-metric-value ${cashOnCash5y >= 25 ? 'positive' : 'neutral'}">${cashOnCash5y}%</div>
+          <div class="invest-metric-sub">skumulowany zwrot</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Cash-on-cash 10 lat</div>
+          <div class="invest-metric-value ${cashOnCash10y >= 50 ? 'positive' : 'neutral'}">${cashOnCash10y}%</div>
+          <div class="invest-metric-sub">skumulowany zwrot</div>
+        </div>
+      `;
+
+      // Summary
+      document.getElementById("result-summary").innerHTML = `
+        <div class="invest-summary-title">Podsumowanie</div>
+        <div class="invest-summary-text">
+          ${verdict}<br><br>
+          Przy czynszu <strong>${fmtPLN(czynsz)}/mies.</strong> i kosztach <strong>${fmtPLN(koszty)}/mies.</strong>,
+          dochód netto wynosi <strong>${fmtPLN(netYearly)}/rok</strong> (${fmtPLN(netMonthly)}/mies.).
+          Inwestycja ${paybackYears > 0 ? 'zwróci się w <strong>' + paybackYears + ' lat</strong>' : 'nie zwróci się przy obecnych parametrach'}.
+          ${tax > 0 ? 'Podatek ryczałtowy: ' + fmtPLN(tax) + '/rok.' : ''}
+        </div>
+      `;
+
+      // Show results
+      document.getElementById("results").classList.remove("hidden");
+      document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  </script>
+
+</body>
+</html>
