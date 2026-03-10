@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator PUM / ROI — RCT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=7.1">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+  <div class="mesh-bg"></div>
+
+  <div class="page-content">
+
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="logo-text">RCT</div>
+          <div class="logo-sub">Rejestr Cen Transakcyjnych</div>
+        </div>
+        <nav class="header-nav">
+          <a href="/" class="nav-link">Raport cen</a>
+          <a href="/invest.html" class="nav-link">Kalkulator ROI</a>
+          <a href="/pum.html" class="nav-link active">Kalkulator PUM</a>
+        </nav>
+        <div class="header-meta">
+          <span class="header-source">analiza inwestycji deweloperskiej</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+
+      <section class="hero" style="padding:60px 24px 40px">
+        <div class="hero-tag">Inwestycja deweloperska</div>
+        <h1>Kalkulator <span class="gradient-text">PUM</span></h1>
+        <p class="subtitle">Oblicz PUM, koszty budowy, przychód i ROI projektu deweloperskiego</p>
+      </section>
+
+      <div class="container">
+        <div class="glass-card form-card">
+          <div class="card-top">
+            <div class="card-title">Parametry działki</div>
+            <div class="card-label">Dane wejściowe</div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="pum-dzialka">Powierzchnia działki (m²)</label>
+              <input type="number" id="pum-dzialka" placeholder="np. 2000">
+            </div>
+            <div class="field">
+              <label for="pum-cena-dzialki">Cena działki (PLN)</label>
+              <input type="number" id="pum-cena-dzialki" placeholder="np. 1200000">
+            </div>
+            <div class="field">
+              <label for="pum-pzt">Maksymalna powierzchnia zabudowy (%)</label>
+              <input type="number" id="pum-pzt" placeholder="np. 40" min="1" max="100">
+            </div>
+            <div class="field">
+              <label for="pum-intensywnosc">Intensywność zabudowy (współczynnik)</label>
+              <input type="number" id="pum-intensywnosc" placeholder="np. 1.6" step="0.1">
+            </div>
+            <div class="field">
+              <label for="pum-kondygnacje">Liczba kondygnacji</label>
+              <select id="pum-kondygnacje">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="pum-wspolczynnik">Współczynnik PUM do PUB (%)</label>
+              <input type="number" id="pum-wspolczynnik" placeholder="np. 75" value="75" min="50" max="95">
+              <span style="font-size:10px;color:var(--text-4);margin-top:2px">PUM = PUB × współczynnik (reszta to klatki, piwnice, garaże)</span>
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+          <div class="card-top" style="margin-bottom:18px">
+            <div class="card-title">Koszty i sprzedaż</div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="pum-koszt-budowy">Koszt budowy / m² PUM (PLN)</label>
+              <input type="number" id="pum-koszt-budowy" placeholder="np. 6500">
+              <span style="font-size:10px;color:var(--text-4);margin-top:2px">Stan deweloperski: 5 500–7 500 PLN/m²</span>
+            </div>
+            <div class="field">
+              <label for="pum-cena-sprzedazy">Cena sprzedaży / m² PUM (PLN)</label>
+              <input type="number" id="pum-cena-sprzedazy" placeholder="np. 12000">
+            </div>
+            <div class="field">
+              <label for="pum-koszty-projekt">Koszty projektu i pozwoleń (PLN)</label>
+              <input type="number" id="pum-koszty-projekt" placeholder="np. 150000" value="0">
+            </div>
+            <div class="field">
+              <label for="pum-koszty-przylacza">Przyłącza i infrastruktura (PLN)</label>
+              <input type="number" id="pum-koszty-przylacza" placeholder="np. 100000" value="0">
+            </div>
+            <div class="field">
+              <label for="pum-koszty-marketing">Marketing i sprzedaż (% przychodu)</label>
+              <input type="number" id="pum-koszty-marketing" placeholder="np. 3" value="3" step="0.5">
+            </div>
+            <div class="field">
+              <label for="pum-koszty-finansowe">Koszty finansowe / kredyt (PLN)</label>
+              <input type="number" id="pum-koszty-finansowe" placeholder="np. 200000" value="0">
+            </div>
+          </div>
+
+          <button id="calc-btn" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20"/></svg>
+            Oblicz PUM i rentowność
+          </button>
+        </div>
+
+        <!-- RESULTS -->
+        <div id="results" class="hidden">
+
+          <div class="output-bar">
+            <div class="output-actions">
+              <button id="pdf-btn" class="btn-outline" onclick="downloadPDF()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+                Pobierz PDF
+              </button>
+            </div>
+          </div>
+
+          <div id="pdf-container">
+
+          <div class="print-header">
+            <div class="print-header__logo">
+              <div class="print-header__mark">RCT</div>
+              <div class="print-header__name">Kalkulator <span>PUM</span></div>
+            </div>
+            <div class="print-header__meta">Analiza inwestycji deweloperskiej<br>Rejestr Cen Transakcyjnych</div>
+          </div>
+
+          <!-- PUM Section -->
+          <div class="invest-card">
+            <div class="section-head">
+              <div class="section-title">Powierzchnia użytkowa mieszkań (PUM)</div>
+              <div class="section-tag" id="result-verdict-tag"></div>
+            </div>
+
+            <div class="roi-highlight" id="pum-highlight">
+              <div class="roi-number" id="pum-number">0 m²</div>
+              <div class="roi-label">PUM — powierzchnia użytkowa mieszkań</div>
+            </div>
+
+            <div class="invest-grid" id="result-pum">
+            </div>
+          </div>
+
+          <!-- Financial Section -->
+          <div class="invest-card">
+            <div class="section-head">
+              <div class="section-title">Analiza finansowa projektu</div>
+            </div>
+
+            <div class="roi-highlight" id="roi-highlight">
+              <div class="roi-number" id="roi-number">0%</div>
+              <div class="roi-label">ROI projektu deweloperskiego</div>
+            </div>
+
+            <div class="invest-grid" id="result-finance">
+            </div>
+
+            <div class="invest-summary" id="result-summary">
+            </div>
+          </div>
+
+          <div class="report-footer" style="margin-top:12px">
+            Źródło: RCT — Rejestr Cen Transakcyjnych · Kalkulator PUM / ROI<br>
+            Raport wygenerowany: <span id="result-date"></span> · Charakter informacyjny
+          </div>
+
+          <div class="print-footer">
+            <strong>RCT — Rejestr Cen Transakcyjnych</strong> — Kalkulator opłacalności inwestycji deweloperskiej<br>
+            Raport ma charakter informacyjny i nie stanowi porady inwestycyjnej.
+          </div>
+
+          </div><!-- /pdf-container -->
+
+          <div style="text-align:center;margin-top:24px">
+            <button id="pdf-btn-bottom" class="btn-outline" onclick="downloadPDF()" style="margin-bottom:12px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7"/><path d="M19 21H5"/></svg>
+              Pobierz PDF
+            </button>
+            <br>
+            <button id="reset-btn" class="btn-ghost">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Nowa kalkulacja
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>RCT — Rejestr Cen Transakcyjnych &mdash; <a href="/">Raport cen</a> · <a href="/invest.html">Kalkulator ROI</a> · <a href="/pum.html">Kalkulator PUM</a></p>
+      <p style="margin-top:4px;font-size:11px;color:var(--text-4)">Kalkulator ma charakter informacyjny — nie stanowi porady inwestycyjnej</p>
+    </footer>
+
+  </div>
+
+  <script>
+    const fmt = (n) => n.toLocaleString("pl-PL");
+    const fmtPLN = (n) => fmt(n) + " PLN";
+
+    document.getElementById("calc-btn").addEventListener("click", calculate);
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      document.getElementById("results").classList.add("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    function calculate() {
+      const dzialka = parseFloat(document.getElementById("pum-dzialka").value) || 0;
+      const cenaDzialki = parseFloat(document.getElementById("pum-cena-dzialki").value) || 0;
+      const pzt = parseFloat(document.getElementById("pum-pzt").value) || 0;
+      const intensywnosc = parseFloat(document.getElementById("pum-intensywnosc").value) || 0;
+      const kondygnacje = parseInt(document.getElementById("pum-kondygnacje").value) || 4;
+      const wspolczynnikPUM = (parseFloat(document.getElementById("pum-wspolczynnik").value) || 75) / 100;
+      const kosztBudowy = parseFloat(document.getElementById("pum-koszt-budowy").value) || 0;
+      const cenaSprzedazy = parseFloat(document.getElementById("pum-cena-sprzedazy").value) || 0;
+      const kosztyProjekt = parseFloat(document.getElementById("pum-koszty-projekt").value) || 0;
+      const kosztyPrzylacza = parseFloat(document.getElementById("pum-koszty-przylacza").value) || 0;
+      const marketingPct = parseFloat(document.getElementById("pum-koszty-marketing").value) || 0;
+      const kosztyFinansowe = parseFloat(document.getElementById("pum-koszty-finansowe").value) || 0;
+
+      if (!dzialka || !pzt || !kosztBudowy || !cenaSprzedazy) {
+        alert("Podaj powierzchnię działki, % zabudowy, koszt budowy i cenę sprzedaży");
+        return;
+      }
+
+      // === PUM CALCULATIONS ===
+      const powZabudowy = Math.round(dzialka * pzt / 100);
+      let pub; // Powierzchnia użytkowa budynku
+      if (intensywnosc > 0) {
+        pub = Math.round(dzialka * intensywnosc);
+      } else {
+        pub = powZabudowy * kondygnacje;
+      }
+      const pum = Math.round(pub * wspolczynnikPUM);
+      const powWspolna = pub - pum;
+      const cenaDzialkiM2 = dzialka > 0 ? Math.round(cenaDzialki / dzialka) : 0;
+      const cenaDzialkiPUM = pum > 0 ? Math.round(cenaDzialki / pum) : 0;
+
+      // Szacunkowa liczba mieszkań (średnio 50m²)
+      const liczbaMieszkan = Math.round(pum / 50);
+
+      // === FINANCIAL CALCULATIONS ===
+      const kosztBudowyTotal = pum * kosztBudowy;
+      const przychod = pum * cenaSprzedazy;
+      const kosztyMarketing = Math.round(przychod * marketingPct / 100);
+      const kosztCalkowity = cenaDzialki + kosztBudowyTotal + kosztyProjekt + kosztyPrzylacza + kosztyMarketing + kosztyFinansowe;
+      const zyskBrutto = przychod - kosztCalkowity;
+      const marza = przychod > 0 ? +((zyskBrutto / przychod) * 100).toFixed(1) : 0;
+      const roi = kosztCalkowity > 0 ? +((zyskBrutto / kosztCalkowity) * 100).toFixed(1) : 0;
+      const zyskM2 = pum > 0 ? Math.round(zyskBrutto / pum) : 0;
+      const kosztM2 = pum > 0 ? Math.round(kosztCalkowity / pum) : 0;
+
+      // Verdict
+      let verdict, verdictTag, verdictColor;
+      if (roi >= 25) {
+        verdict = 'Bardzo wysoka rentowność — projekt atrakcyjny inwestycyjnie';
+        verdictTag = 'Bardzo dobra'; verdictColor = '#22c55e';
+      } else if (roi >= 15) {
+        verdict = 'Dobra rentowność — projekt opłacalny przy kontroli kosztów';
+        verdictTag = 'Dobra'; verdictColor = '#10b981';
+      } else if (roi >= 8) {
+        verdict = 'Umiarkowana rentowność — niskie marginesy bezpieczeństwa';
+        verdictTag = 'Umiarkowana'; verdictColor = '#f59e0b';
+      } else {
+        verdict = 'Niska rentowność — wysokie ryzyko, rozważ negocjację ceny gruntu';
+        verdictTag = 'Niska'; verdictColor = '#ef4444';
+      }
+
+      // === RENDER PUM ===
+      document.getElementById("pum-number").textContent = fmt(pum) + " m²";
+      document.getElementById("pum-number").style.color = '#10b981';
+      document.getElementById("pum-highlight").style.borderColor = '#10b981';
+
+      document.getElementById("result-pum").innerHTML = `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Powierzchnia działki</div>
+          <div class="invest-metric-value neutral">${fmt(dzialka)} m²</div>
+          ${cenaDzialkiM2 > 0 ? `<div class="invest-metric-sub">${fmtPLN(cenaDzialkiM2)} / m² działki</div>` : ''}
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Pow. zabudowy</div>
+          <div class="invest-metric-value neutral">${fmt(powZabudowy)} m²</div>
+          <div class="invest-metric-sub">${pzt}% powierzchni działki</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">PUB (pow. użytkowa budynku)</div>
+          <div class="invest-metric-value neutral">${fmt(pub)} m²</div>
+          <div class="invest-metric-sub">${intensywnosc > 0 ? 'intensywność ' + intensywnosc : kondygnacje + ' kondygnacji'}</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">PUM (pow. użytkowa mieszkań)</div>
+          <div class="invest-metric-value positive">${fmt(pum)} m²</div>
+          <div class="invest-metric-sub">${Math.round(wspolczynnikPUM * 100)}% PUB</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Pow. wspólna (klatki, garaże)</div>
+          <div class="invest-metric-value neutral">${fmt(powWspolna)} m²</div>
+          <div class="invest-metric-sub">${Math.round((1 - wspolczynnikPUM) * 100)}% PUB</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Szac. liczba mieszkań</div>
+          <div class="invest-metric-value neutral">~${liczbaMieszkan}</div>
+          <div class="invest-metric-sub">przy śr. 50 m² / mieszkanie</div>
+        </div>
+        ${cenaDzialkiPUM > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszt gruntu / m² PUM</div>
+          <div class="invest-metric-value neutral">${fmtPLN(cenaDzialkiPUM)}</div>
+          <div class="invest-metric-sub">udział gruntu w cenie</div>
+        </div>` : ''}
+      `;
+
+      // === RENDER FINANCE ===
+      document.getElementById("roi-number").textContent = roi + "%";
+      document.getElementById("roi-number").style.color = verdictColor;
+      document.getElementById("roi-highlight").style.borderColor = verdictColor;
+      document.getElementById("result-verdict-tag").textContent = verdictTag;
+      document.getElementById("result-verdict-tag").style.color = verdictColor;
+
+      document.getElementById("result-finance").innerHTML = `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszt gruntu</div>
+          <div class="invest-metric-value negative">${fmtPLN(cenaDzialki)}</div>
+          ${cenaDzialkiPUM > 0 ? `<div class="invest-metric-sub">${fmtPLN(cenaDzialkiPUM)} / m² PUM</div>` : ''}
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszt budowy</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztBudowyTotal)}</div>
+          <div class="invest-metric-sub">${fmt(pum)} m² × ${fmtPLN(kosztBudowy)}/m²</div>
+        </div>
+        ${kosztyProjekt > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Projekt i pozwolenia</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztyProjekt)}</div>
+        </div>` : ''}
+        ${kosztyPrzylacza > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Przyłącza i infrastruktura</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztyPrzylacza)}</div>
+        </div>` : ''}
+        ${kosztyMarketing > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Marketing i sprzedaż</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztyMarketing)}</div>
+          <div class="invest-metric-sub">${marketingPct}% przychodu</div>
+        </div>` : ''}
+        ${kosztyFinansowe > 0 ? `
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszty finansowe</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztyFinansowe)}</div>
+        </div>` : ''}
+        <div class="invest-metric">
+          <div class="invest-metric-label">Koszt całkowity</div>
+          <div class="invest-metric-value negative">${fmtPLN(kosztCalkowity)}</div>
+          <div class="invest-metric-sub">${fmtPLN(kosztM2)} / m² PUM</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Przychód ze sprzedaży</div>
+          <div class="invest-metric-value positive">${fmtPLN(przychod)}</div>
+          <div class="invest-metric-sub">${fmt(pum)} m² × ${fmtPLN(cenaSprzedazy)}/m²</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Zysk brutto</div>
+          <div class="invest-metric-value ${zyskBrutto >= 0 ? 'positive' : 'negative'}">${fmtPLN(zyskBrutto)}</div>
+          <div class="invest-metric-sub">${fmtPLN(zyskM2)} / m² PUM</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">Marża</div>
+          <div class="invest-metric-value ${marza >= 15 ? 'positive' : marza >= 8 ? 'neutral' : 'negative'}">${marza}%</div>
+          <div class="invest-metric-sub">zysk / przychód</div>
+        </div>
+        <div class="invest-metric">
+          <div class="invest-metric-label">ROI</div>
+          <div class="invest-metric-value" style="color:${verdictColor}">${roi}%</div>
+          <div class="invest-metric-sub">zysk / koszt całkowity</div>
+        </div>
+      `;
+
+      // === SUMMARY ===
+      document.getElementById("result-summary").innerHTML = `
+        <div class="invest-summary-title">Podsumowanie</div>
+        <div class="invest-summary-text">
+          ${verdict}.<br><br>
+          Na działce <strong>${fmt(dzialka)} m²</strong> można wybudować <strong>${fmt(pum)} m² PUM</strong>
+          (~${liczbaMieszkan} mieszkań).
+          Koszt całkowity: <strong>${fmtPLN(kosztCalkowity)}</strong> (${fmtPLN(kosztM2)}/m² PUM).
+          Przy cenie sprzedaży <strong>${fmtPLN(cenaSprzedazy)}/m²</strong>,
+          zysk brutto wynosi <strong>${fmtPLN(zyskBrutto)}</strong> (marża ${marza}%, ROI ${roi}%).
+        </div>
+      `;
+
+      document.getElementById("result-date").textContent = new Date().toLocaleDateString('pl-PL');
+      document.getElementById("results").classList.remove("hidden");
+      document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // --- PDF ---
+    async function downloadPDF() {
+      const container = document.getElementById("pdf-container");
+      if (!container) return;
+      const filename = `PUM_Analiza_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      const btns = [document.getElementById('pdf-btn'), document.getElementById('pdf-btn-bottom')].filter(Boolean);
+      const origHTML = btns[0]?.innerHTML;
+      btns.forEach(b => {
+        b.disabled = true;
+        b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.2-8.55"/></svg> Generuję PDF…';
+      });
+
+      container.classList.add('pdf-render');
+      await new Promise(r => setTimeout(r, 300));
+
+      try {
+        const { jsPDF } = jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageW = 210, pageH = 297, margin = 8;
+        const contentW = pageW - 2 * margin;
+        const contentH = pageH - 2 * margin;
+        const captureWidth = container.scrollWidth || 800;
+        const scale = 2;
+
+        const sections = Array.from(container.children).filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && el.offsetHeight > 0;
+        });
+
+        let curY = margin;
+        for (let i = 0; i < sections.length; i++) {
+          const sectionCanvas = await html2canvas(sections[i], {
+            scale, useCORS: true, logging: false, backgroundColor: '#ffffff',
+            width: captureWidth, windowWidth: captureWidth,
+            scrollX: 0, scrollY: -window.scrollY,
+          });
+          const sectionImgData = sectionCanvas.toDataURL('image/jpeg', 0.92);
+          const sectionH_mm = (sectionCanvas.height / scale) * (contentW / captureWidth);
+
+          if (curY + sectionH_mm <= pageH - margin) {
+            pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+            curY += sectionH_mm;
+          } else if (sectionH_mm <= contentH) {
+            pdf.addPage(); curY = margin;
+            pdf.addImage(sectionImgData, 'JPEG', margin, curY, contentW, sectionH_mm);
+            curY += sectionH_mm;
+          } else {
+            if (curY > margin + 1) { pdf.addPage(); curY = margin; }
+            let sliceY = 0;
+            const totalPx = sectionCanvas.height;
+            while (sliceY < totalPx) {
+              const availH_mm = pageH - margin - curY;
+              const availH_px = Math.floor(availH_mm / (contentW / captureWidth) * scale);
+              const sliceH_px = Math.min(availH_px, totalPx - sliceY);
+              const sliceH_mm = (sliceH_px / scale) * (contentW / captureWidth);
+              const sc = document.createElement('canvas');
+              sc.width = sectionCanvas.width; sc.height = sliceH_px;
+              sc.getContext('2d').drawImage(sectionCanvas, 0, sliceY, sectionCanvas.width, sliceH_px, 0, 0, sectionCanvas.width, sliceH_px);
+              pdf.addImage(sc.toDataURL('image/jpeg', 0.92), 'JPEG', margin, curY, contentW, sliceH_mm);
+              sliceY += sliceH_px; curY += sliceH_mm;
+              if (sliceY < totalPx) { pdf.addPage(); curY = margin; }
+            }
+          }
+        }
+        pdf.save(filename);
+      } catch (err) {
+        console.error('PDF error:', err);
+        alert('Błąd generowania PDF: ' + err.message);
+      }
+
+      container.classList.remove('pdf-render');
+      btns.forEach(b => { b.disabled = false; b.innerHTML = origHTML; });
+    }
+
+    if (!document.getElementById('spin-style')) {
+      const s = document.createElement('style');
+      s.id = 'spin-style';
+      s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(s);
+    }
+  </script>
+
+</body>
+</html>
